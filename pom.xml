@@ -35,13 +35,6 @@
       <version>${api.version}</version>
       <systemPath>${apim.lib.path}\circuit.jar</systemPath>
     </dependency>
-    <dependency>
-      <groupId>common</groupId>
-      <artifactId>common</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\common.jar</systemPath>
-    </dependency>
 
     <dependency>
       <groupId>security</groupId>

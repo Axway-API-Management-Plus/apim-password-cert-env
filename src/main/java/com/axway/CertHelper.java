@@ -14,13 +14,9 @@ import java.util.Enumeration;
 public class CertHelper {
 
     public PKCS12 parseP12(String content, String password) throws KeyStoreException, NoSuchAlgorithmException, IOException, CertificateException, UnrecoverableKeyException {
-        //Get the Key store
+
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
         InputStream io = new ByteArrayInputStream(Base64.getDecoder().decode(content));
-        //Loads the KeyStore from the file input stream and uses the password
-        //to unlock the keystore, or to check the integrity of the keystore data.
-        //    #If the password is not given for integrity checking, then
-        //#integrity checking is not performed.
         keyStore.load(io, password.toCharArray());
         io.close();
         Enumeration<String> aliases = keyStore.aliases();
@@ -35,7 +31,6 @@ public class CertHelper {
                 return  pkcs12;
             }
         }
-
         return null;
     }
 

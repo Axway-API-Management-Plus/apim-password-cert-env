@@ -4,20 +4,12 @@ import com.vordel.config.ConfigContext;
 import com.vordel.config.LoadableModule;
 import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
+import com.vordel.es.EntityStoreDelegate;
 import com.vordel.es.EntityStoreException;
 import com.vordel.es.util.ShorthandKeyFinder;
-import com.vordel.store.cert.CertStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +19,7 @@ import java.util.Set;
 public class ExternalConfigLoader implements LoadableModule {
 
     private static final Logger log = LogManager.getLogger(ExternalConfigLoader.class);
+    private CertHelper certHelper = new CertHelper();
 
 
     @Override
@@ -44,6 +37,7 @@ public class ExternalConfigLoader implements LoadableModule {
         log.info("Loading configuration Password and Certificate Environment variable Module");
         EntityStore entityStore = configContext.getStore();
         updatePassword(entityStore);
+        // entity.
     }
 
     public void updatePassword(EntityStore entityStore) {
@@ -68,11 +62,8 @@ public class ExternalConfigLoader implements LoadableModule {
             } else if (key.startsWith("httpbasic")) {
                 shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "httpAuthPass", passwordValue, null);
-}
-//            else if (key.startsWith("cassandra")){
-//                shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-//                updatePasswordField(entityStore,shorthandKey,"password", passwordValue,null);
-//            }
+            }
+
             else if (key.startsWith("radius")) {
                 // [RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=HMHSRadiusClient/[RadiusServer]host=157.154.52.85,port=1812
                 shorthandKey = "[RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=" + filterName;
@@ -144,27 +135,34 @@ public class ExternalConfigLoader implements LoadableModule {
 //    }
 
 
-    public void addCertToStore(EntityStore entityStore, String alias, String cert) {
+    public void addP12ToStore(EntityStore entityStore, String alias, String cert, String password) throws Exception {
+
+        PKCS12 pkcs12 = certHelper.parseP12(cert, password);
+
         //         # Gets the Cert store using short hand key
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        //  entityStore.getEntity(shorthandKeyFinder)
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         //escape
         shorthandKey = "[Certificate]dname=" + alias;
         //See if the certificate alias already exists in the entity store,
         //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
         Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
-        if (certEntity == null) {
+        if (certEntity != null) {
+            //certEntity.setBinaryValue();
             //Updates the existing certificate in the certstore
-            //certEntity.setBinaryValue("content", cert.getEncoded());
+            certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
             entityStore.updateEntity(certEntity);
+            String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
+            certEntity.setStringField("key", key);
         } else {
-
-
-//            certEntity = entityStore.createEntity("Certificate");
-//            certEntity.setStringField("dname", alias);
-//            certEntity.setBinaryValue("content", cert.getEncoded());
-//            entityStore.addEntity(certStore, certEntity);
+            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
+            certEntity.setStringField("dname", alias);
+            certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
+            String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
+            certEntity.setStringField("key", key);
+            entityStore.addEntity(certEntity.getPK(), certEntity);
         }
     }
 
