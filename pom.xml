@@ -35,6 +35,21 @@
       <version>${api.version}</version>
       <systemPath>${apim.lib.path}\circuit.jar</systemPath>
     </dependency>
+    <dependency>
+      <groupId>common</groupId>
+      <artifactId>common</artifactId>
+      <scope>system</scope>
+      <version>${api.version}</version>
+      <systemPath>${apim.lib.path}\common.jar</systemPath>
+    </dependency>
+
+    <dependency>
+      <groupId>security</groupId>
+      <artifactId>security</artifactId>
+      <scope>system</scope>
+      <version>${api.version}</version>
+      <systemPath>${apim.lib.path}\security.jar</systemPath>
+    </dependency>
 
 
     <dependency>
@@ -79,6 +94,13 @@
       <systemPath>${apim.lib.path}\plugins\es-core-7.7.0-4.jar</systemPath>
     </dependency>
 
+    <dependency>
+      <groupId>vordel-common</groupId>
+      <artifactId>vordel-common</artifactId>
+      <scope>system</scope>
+      <version>${api.version}</version>
+      <systemPath>${apim.lib.path}\plugins\vordel-common-7.7.0-4.jar</systemPath>
+    </dependency>
 
     <dependency>
       <groupId>vordel-circuit</groupId>
@@ -136,6 +158,13 @@
       <artifactId>log4j-core</artifactId>
       <version>2.11.2</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+    </dependency>
+
 
   </dependencies>
 

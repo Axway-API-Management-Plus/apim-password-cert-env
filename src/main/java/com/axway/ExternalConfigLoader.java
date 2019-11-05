@@ -68,7 +68,7 @@ public class ExternalConfigLoader implements LoadableModule {
             } else if (key.startsWith("httpbasic")) {
                 shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "httpAuthPass", passwordValue, null);
-            }
+}
 //            else if (key.startsWith("cassandra")){
 //                shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
 //                updatePasswordField(entityStore,shorthandKey,"password", passwordValue,null);
@@ -93,7 +93,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
             } else if (key.startsWith("cert")) {
                 //<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='CN=Change this for production'/></key></key>
-                importCertficate(filterName);
+                //importCertficate(filterName);
             }
         }
     }
@@ -105,42 +105,43 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private String importCertficate(String base64EncodedCert) {
-        CertificateFactory certificateFactory;
-
-        try {
-            byte encodedCert[] = Base64.getDecoder().decode(base64EncodedCert);
-            InputStream inputStream = new ByteArrayInputStream(encodedCert);
-            certificateFactory = CertificateFactory.getInstance("X.509");
-            X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
-            CertStore certStore = CertStore.getInstance();
-            PublicKey publicKey = certificate.getPublicKey();
-            certificate.getP
-            final String alias = DatatypeConverter.printBase64Binary(publicKey.getEncoded());
-            if (certStore.getPersonalInfo(certificate.getSubjectDN()) == null) {
-
-
-                Thread task = new Thread(new Runnable() {
-                    public void run() {
-                        try {
-                            certStore.addEntry(certificate, null, alias);
-                        } catch (NoSuchAlgorithmException e) {
-                            e.printStackTrace();
-                        } catch (CertificateException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-                task.start();
-                task.join();
-            }
-            return alias;
-        } catch (CertificateException | InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
-
-    }
+    // Trust CA certs
+//    private String importCertficate(String base64EncodedCert) {
+//        CertificateFactory certificateFactory;
+//
+//        try {
+//            byte encodedCert[] = Base64.getDecoder().decode(base64EncodedCert);
+//            InputStream inputStream = new ByteArrayInputStream(encodedCert);
+//            certificateFactory = CertificateFactory.getInstance("X.509");
+//            X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
+//            CertStore certStore = CertStore.getInstance();
+//            PublicKey publicKey = certificate.getPublicKey();
+//            //certificate.getP
+//            final String alias = DatatypeConverter.printBase64Binary(publicKey.getEncoded());
+//            if (certStore.getPersonalInfo(certificate.getSubjectDN()) == null) {
+//
+//
+//                Thread task = new Thread(new Runnable() {
+//                    public void run() {
+//                        try {
+//                            certStore.addEntry(certificate, null, alias);
+//                        } catch (NoSuchAlgorithmException e) {
+//                            e.printStackTrace();
+//                        } catch (CertificateException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                });
+//                task.start();
+//                task.join();
+//            }
+//            return alias;
+//        } catch (CertificateException | InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        return null;
+//
+//    }
 
 
     public void addCertToStore(EntityStore entityStore, String alias, String cert) {
@@ -155,15 +156,15 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
         if (certEntity == null) {
             //Updates the existing certificate in the certstore
-            certEntity.setBinaryValue("content", cert.getEncoded());
+            //certEntity.setBinaryValue("content", cert.getEncoded());
             entityStore.updateEntity(certEntity);
         } else {
 
 
-            certEntity = entityStore.createEntity("Certificate");
-            certEntity.setStringField("dname", alias);
-            certEntity.setBinaryValue("content", cert.getEncoded());
-            entityStore.addEntity(certStore, certEntity);
+//            certEntity = entityStore.createEntity("Certificate");
+//            certEntity.setStringField("dname", alias);
+//            certEntity.setBinaryValue("content", cert.getEncoded());
+//            entityStore.addEntity(certStore, certEntity);
         }
     }
 
