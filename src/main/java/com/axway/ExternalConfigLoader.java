@@ -7,6 +7,7 @@ import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreDelegate;
 import com.vordel.es.EntityStoreException;
 import com.vordel.es.util.ShorthandKeyFinder;
+import com.vordel.trace.Trace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,7 +24,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
 
     @Override
-    public void load(LoadableModule arg0, String arg1) throws FatalException {
+    public void load(LoadableModule arg0, String arg1) {
         log.info("loading Password and Certificate Environment variable Module");
     }
 
@@ -33,7 +34,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     @Override
-    public void configure(ConfigContext configContext, Entity entity) throws EntityStoreException, FatalException {
+    public void configure(ConfigContext configContext, Entity entity) throws EntityStoreException {
         log.info("Loading configuration Password and Certificate Environment variable Module");
         EntityStore entityStore = configContext.getStore();
         updatePassword(entityStore);
@@ -47,12 +48,16 @@ public class ExternalConfigLoader implements LoadableModule {
 
         while (keysIterator.hasNext()) {
             String key = keysIterator.next();
-            String filterName = key.split(".")[1];
+            if(!key.contains("_"))
+                continue;
+            String filterName = key.split("_")[1];
             String passwordValue = envValues.get(key);
             String shorthandKey;
             if (key.startsWith("db")) {
+                log.info("Updating db password for DB connection : "+ filterName);
                 shorthandKey = "/[DbConnectionGroup]name=Database Connections/[DbConnection]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
+
             } else if (key.startsWith("ldap")) {
                 shorthandKey = "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
@@ -62,9 +67,7 @@ public class ExternalConfigLoader implements LoadableModule {
             } else if (key.startsWith("httpbasic")) {
                 shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "httpAuthPass", passwordValue, null);
-            }
-
-            else if (key.startsWith("radius")) {
+            }else if (key.startsWith("radius")) {
                 // [RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=HMHSRadiusClient/[RadiusServer]host=157.154.52.85,port=1812
                 shorthandKey = "[RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=" + filterName;
                 for (int i = 1; true; i++) {
@@ -86,13 +89,19 @@ public class ExternalConfigLoader implements LoadableModule {
                 //<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='CN=Change this for production'/></key></key>
                 //importCertficate(filterName);
             }
+
         }
+
+        //entityStore.updateEntity();
     }
 
     public void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String value, Object secret) {
+        Trace.info("updating password");
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+        value = Base64.getEncoder().encodeToString(value.getBytes());
         entity.setStringField(fieldName, value);
+        entityStore.updateEntity(entity);
     }
 
 

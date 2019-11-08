@@ -2,6 +2,6 @@
 	<entityType name="ExternalConfigLoader" extends="NamedLoadableModule">
 		<constant name="_version" type="integer" value="1" />
 		<constant name="class" type="string" value="com.axway.ExternalConfigLoader" />
-		<constant name="loadorder" type="integer" value="1" />
+		<constant name="loadorder" type="integer" value="2" />
 	</entityType>
 </entityStoreData>
