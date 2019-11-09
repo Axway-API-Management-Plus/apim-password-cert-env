@@ -99,6 +99,8 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("updating password");
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+        if(entity == null)
+            return;
         value = Base64.getEncoder().encodeToString(value.getBytes());
         entity.setStringField(fieldName, value);
         entityStore.updateEntity(entity);
