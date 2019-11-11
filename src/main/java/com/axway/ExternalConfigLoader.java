@@ -6,6 +6,7 @@ import com.vordel.config.LoadableModule;
 import com.vordel.dwe.Service;
 import com.vordel.es.*;
 import com.vordel.es.util.ShorthandKeyFinder;
+import com.vordel.es.xes.PortableESPK;
 import com.vordel.store.cert.CertStore;
 import com.vordel.trace.Trace;
 import org.apache.logging.log4j.LogManager;
@@ -86,7 +87,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     updatePasswordField(entityStore, shorthandKey, "secret", passwordValue, null);
                 }
 
-            } else if (key.startsWith("cert")) {
+            } else if (key.startsWith("cert_")) {
                 importPublicCertificate(passwordValue, entityStore);
             } else if (key.startsWith("cassandraCertDname")) {
 
@@ -96,7 +97,9 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateCassandraCert(entityStore, escapedAlias);
             } else if (key.startsWith("certandkey")) {
                 try {
-                    importP12(entityStore, null, "");
+                    String alias = importP12(entityStore, passwordValue, "changeit");
+                    String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+                    configureP12(entityStore,filterName, escapedAlias);
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
@@ -126,8 +129,9 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
-            String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
-            entity.setStringField("sslTrustedCerts", certPlaceHolder);
+            //String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
+            PortableESPK portableESPK = getCertEntity(entityStore, escapedAlias);
+            entity.setReferenceField("sslTrustedCerts", portableESPK);
             entityStore.updateEntity(entity);
         }
 
@@ -177,8 +181,38 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
+    public void configureP12(EntityStore entityStore, String name, String alias){
 
-    public void importP12(EntityStore entityStore, String cert, String password) throws Exception {
+        String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name="+name;
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> entitys = shorthandKeyFinder.getEntities(shorthandKey);
+        if(entitys.isEmpty()){
+            Trace.error("Listener interface is not available");
+            return;
+        }
+        Entity entity = entitys.get(0);
+        PortableESPK portableESPK = getCertEntity(entityStore, alias);
+        Trace.info("Portable : "+ portableESPK);
+        entity.setReferenceField("serverCert", portableESPK);
+        entityStore.updateEntity(entity);
+    }
+
+    public PortableESPK getCertEntity(EntityStore entityStore, String alias){
+        String shorthandKey = "/[Certificates]name=Certificate Store";
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+
+        shorthandKey = "[Certificate]dname=" + alias;
+        //See if the certificate alias already exists in the entity store,
+        //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
+        Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
+
+        Trace.info("PK : "+ certEntity.getPK());
+        return  PortableESPK.toPortableKey(entityStore, certEntity.getPK());
+    }
+
+
+    public String importP12(EntityStore entityStore, String cert, String password) throws Exception {
 
         PKCS12 pkcs12 = certHelper.parseP12(cert, password);
         String alias = pkcs12.getAlias();
@@ -208,6 +242,9 @@ public class ExternalConfigLoader implements LoadableModule {
             certEntity.setStringField("key", key);
             entityStore.addEntity(groups.iterator().next(), certEntity);
         }
+
+        return  alias;
+
     }
 
 

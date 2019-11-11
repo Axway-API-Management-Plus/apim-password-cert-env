@@ -2,18 +2,14 @@ package com.axway;
 
 
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 
@@ -22,7 +18,7 @@ public class CertHelperTest {
     CertHelper certHelper = new CertHelper();
 
     @Test
-    public void testP12(){
+    public void testP12() {
         InputStream inputStream = ClassLoader.getSystemResourceAsStream("test.p12");
         byte[] data = new byte[0];
         try {
@@ -33,8 +29,8 @@ public class CertHelperTest {
         String content = Base64.getEncoder().encodeToString(data);
         System.out.println(content);
         try {
-           PKCS12 pkcs12 = certHelper.parseP12(content, "changeit");
-           System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
+            PKCS12 pkcs12 = certHelper.parseP12(content, "changeit");
+            System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
             System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -50,7 +46,7 @@ public class CertHelperTest {
     }
 
     @Test
-    public void testX509(){
+    public void testX509() {
         String cert = "-----BEGIN CERTIFICATE-----\n" +
                 "MIIDRjCCAi6gAwIBAgIGAW5HwjW8MA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMM\n" +
                 "BkRvbWFpbjAgFw0xOTEwMzEyMTI1NDFaGA8yMTE5MTAxNDIxMjU0MVowQjEWMBQG\n" +
@@ -77,7 +73,7 @@ public class CertHelperTest {
             X509Certificate certificate = certHelper.parseX509(cert);
             String name = certificate.getSubjectDN().getName();
             System.out.println(name);
-        } catch ( CertificateException e) {
+        } catch (CertificateException e) {
             e.printStackTrace();
         }
     }
