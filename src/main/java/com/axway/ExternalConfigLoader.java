@@ -92,10 +92,12 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
 
             } else if (key.startsWith("cert")) {
-                //<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='CN=Change this for production'/></key></key>
-
                 importPublicCertficate(passwordValue, entityStore);
+            }else if(key.startsWith("cassandraCertDname")){
 
+            }else if(key.startsWith("cassandraCert")){
+                String alias = importPublicCertficate(passwordValue, entityStore);
+                String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
             }
 
         }
@@ -113,6 +115,20 @@ public class ExternalConfigLoader implements LoadableModule {
         //passwordCipher.encrypt()
         entity.setStringField(fieldName, value);
         entityStore.updateEntity(entity);
+    }
+
+    private void updateCassandraCert(String name, EntityStore entityStore, String  escapedAlias){
+        String shorthandKey =  "/[CassandraSettings]name=Cassandra Settings";
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        //  entityStore.getEntity(shorthandKeyFinder)
+        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+        boolean useSSL = entity.getBooleanValue("useSSL");
+        if(useSSL){
+            String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='"+ escapedAlias +"'/></key></key>";
+            entity.setStringField("sslTrustedCerts", certPlaceHolder);
+            entityStore.updateEntity(entity);
+        }
+
     }
 
 
