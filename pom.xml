@@ -150,6 +150,16 @@
     </dependency>
 
 
+
+    <dependency>
+      <groupId>iaik-jce</groupId>
+      <artifactId>iaik-jce</artifactId>
+      <scope>system</scope>
+      <version>${api.version}</version>
+      <systemPath>${apim.lib.path}\jce\iaik_jce-3.17.jar</systemPath>
+    </dependency>
+
+
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>

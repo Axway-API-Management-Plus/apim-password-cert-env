@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Enumeration;
 
@@ -32,6 +34,13 @@ public class CertHelper {
             }
         }
         return null;
+    }
+
+    public X509Certificate parseX509(String base64EncodedCert) throws CertificateException {
+        InputStream inputStream = new ByteArrayInputStream(base64EncodedCert.getBytes());
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(inputStream);
+        return certificate;
     }
 
 }
