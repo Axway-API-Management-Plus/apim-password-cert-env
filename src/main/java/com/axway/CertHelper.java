@@ -30,6 +30,7 @@ public class CertHelper {
                 PKCS12 pkcs12 = new PKCS12();
                 pkcs12.setCertificate(certificate);
                 pkcs12.setPrivateKey(key);
+                pkcs12.setAlias(alias);
                 return  pkcs12;
             }
         }

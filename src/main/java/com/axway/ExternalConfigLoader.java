@@ -8,15 +8,10 @@ import com.vordel.es.*;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.store.cert.CertStore;
 import com.vordel.trace.Trace;
-import iaik.asn1.CodingException;
-import iaik.x509.X509ExtensionInitException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.xml.bind.DatatypeConverter;
-import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
-import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -92,12 +87,19 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
 
             } else if (key.startsWith("cert")) {
-                importPublicCertficate(passwordValue, entityStore);
-            }else if(key.startsWith("cassandraCertDname")){
+                importPublicCertificate(passwordValue, entityStore);
+            } else if (key.startsWith("cassandraCertDname")) {
 
-            }else if(key.startsWith("cassandraCert")){
-                String alias = importPublicCertficate(passwordValue, entityStore);
+            } else if (key.startsWith("cassandraCert")) {
+                String alias = importPublicCertificate(passwordValue, entityStore);
                 String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+                updateCassandraCert(entityStore, escapedAlias);
+            } else if (key.startsWith("certandkey")) {
+                try {
+                    importP12(entityStore, null, "");
+                } catch (Exception e) {
+                    Trace.error("Unable to add the p12 from Environment variable", e);
+                }
             }
 
         }
@@ -117,34 +119,32 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private void updateCassandraCert(String name, EntityStore entityStore, String  escapedAlias){
-        String shorthandKey =  "/[CassandraSettings]name=Cassandra Settings";
+    private void updateCassandraCert(EntityStore entityStore, String escapedAlias) {
+        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         //  entityStore.getEntity(shorthandKeyFinder)
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
-        if(useSSL){
-            String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='"+ escapedAlias +"'/></key></key>";
+        if (useSSL) {
+            String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
             entity.setStringField("sslTrustedCerts", certPlaceHolder);
             entityStore.updateEntity(entity);
         }
 
     }
 
-
     // Trust CA certs
-    private String importPublicCertficate(String base64EncodedCert, EntityStore entityStore) {
+    private String importPublicCertificate(String base64EncodedCert, EntityStore entityStore) {
 
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        //  entityStore.getEntity(shorthandKeyFinder)
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         try {
             Trace.info("Cert :" + base64EncodedCert);
             //byte encodedCert[] = Base64.getDecoder().decode(base64EncodedCert.getBytes("UTF-8"));
             X509Certificate certificate = certHelper.parseX509(base64EncodedCert);
             CertStore certStore = CertStore.getInstance();
-           // PublicKey publicKey = certificate.getPublicKey();
+            // PublicKey publicKey = certificate.getPublicKey();
             //certificate.getP
             Principal principal = certificate.getSubjectDN();
             final String alias = principal.getName();
@@ -154,7 +154,7 @@ public class ExternalConfigLoader implements LoadableModule {
             Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
 
             Trace.info("Alias :" + alias);
-            Trace.info("certStore"+ certStore);
+            Trace.info("certStore" + certStore);
             if (certEntity == null) {
                 Trace.info("Adding cert");
                 certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
@@ -164,31 +164,29 @@ public class ExternalConfigLoader implements LoadableModule {
                 certEntity.setStringField("dname", alias);
                 certEntity.setBinaryValue("content", certificate.getEncoded());
                 entityStore.addEntity(groups.iterator().next(), certEntity);
-            }else{
-                Trace.info("Updating cert with alias "+ alias);
+            } else {
+                Trace.info("Updating cert with alias " + alias);
                 certEntity.setBinaryValue("content", certificate.getEncoded());
                 entityStore.updateEntity(certEntity);
             }
             return alias;
-        } catch (CertificateException  e) {
-            e.printStackTrace();
+        } catch (CertificateException e) {
+            Trace.error("Unable to add the certs from Environment variable", e);
         }
         return null;
 
     }
 
 
-    public void addP12ToStore(EntityStore entityStore, String alias, String cert, String password) throws Exception {
+    public void importP12(EntityStore entityStore, String cert, String password) throws Exception {
 
         PKCS12 pkcs12 = certHelper.parseP12(cert, password);
-
-        //         # Gets the Cert store using short hand key
+        String alias = pkcs12.getAlias();
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        //  entityStore.getEntity(shorthandKeyFinder)
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
-        //escape
-        shorthandKey = "[Certificate]dname=" + alias;
+        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+        shorthandKey = "[Certificate]dname=" + escapedAlias;
         //See if the certificate alias already exists in the entity store,
         //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
         Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
@@ -196,16 +194,19 @@ public class ExternalConfigLoader implements LoadableModule {
             //certEntity.setBinaryValue();
             //Updates the existing certificate in the certstore
             certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
-            entityStore.updateEntity(certEntity);
             String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
             certEntity.setStringField("key", key);
+            entityStore.updateEntity(certEntity);
         } else {
+            ESPK rootPK = entityStore.getRootPK();
+            EntityType group = entityStore.getTypeForName("Certificates");
+            Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
             certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
             certEntity.setStringField("dname", alias);
             certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
             String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
             certEntity.setStringField("key", key);
-            entityStore.addEntity(certEntity.getPK(), certEntity);
+            entityStore.addEntity(groups.iterator().next(), certEntity);
         }
     }
 
