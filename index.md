@@ -4,32 +4,25 @@ Though V7 gateway supports environmentalization through Configuration Studio and
 Currently, we are building a separate container for Dev, QA, PreProd and Prod using pol and env package or fed and envSettings.props.
 - Can't leverage Kubernetes configmap or secrets:
 
-
 Gitlab project https://git-ext.ecd.axway.com/cso-reusable/api-management/apim-components/apim-password-cert-env  is trying to solve the issue.
-
 
 The project uses API Gateway's LoadableModule to override the passwords and certificates.  Other environment variables should reference the Operating System environment variable / configMap with prefix "environment".
 
+- Database connection URL is environmentalized with environment variable db_url
 
-Database connection URL is environmentalized with environment variable db_url
 ![Database Connection](images/db.png)
 
-Password and certificate environment variable should follow a structure
+- Password and certificate environment variable should follow a structure
 
-e.g
+    e.g export db_axway=xyz123
 
-export db_axway=xyz123
+- The prefix "db" refers to database connection  - the prefix used by LoadableModule to update the appropriate entity.
+- The suffix "axway" refers to a Database connection in Policystudio.
+- xyz123 is a password of axway database connection.
 
-
-
-The prefix "db" refers to database connection  - the prefix used by LoadableModule to update the appropriate entity.
-The suffix "axway" refers to a Database connection in Policystudio.
-xyz123 is a password of axway database connection.
 ![Database Connection](images/db_connection.png)
 
 ##What is tested?
-
-
 
 - DB Password:
 ```bash
