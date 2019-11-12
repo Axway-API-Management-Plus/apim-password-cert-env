@@ -29,7 +29,7 @@ public class CertHelperTest {
         String content = Base64.getEncoder().encodeToString(data);
         System.out.println(content);
         try {
-            PKCS12 pkcs12 = certHelper.parseP12(content, "changeit");
+            PKCS12 pkcs12 = certHelper.parseP12(content, "changeit".toCharArray());
             System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
             System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException e) {
