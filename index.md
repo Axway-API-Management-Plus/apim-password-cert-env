@@ -14,7 +14,7 @@ The project uses API Gateway's LoadableModule to override the passwords and cert
 
 - Password and certificate environment variable should follow a structure
 
-    e.g export db_axway=xyz123
+    e.g export db_axway_password=xyz123
 
 - The prefix "db" refers to database connection  - the prefix used by LoadableModule to update the appropriate entity.
 - The suffix "axway" refers to a Database connection in Policystudio.
@@ -26,12 +26,20 @@ The project uses API Gateway's LoadableModule to override the passwords and cert
 
 - DB Password:
 ```bash
-$export db_axway=xyz123
+$export db_axway_password=xyz123
 ```
 
-- LDAP password
+- LDAP Environment Variable
 ```bash
-$export ldap_axway=changme
+$export ldap_axway_username=cn=Administrator,dc=axwaydemo,dc=com
+$export ldap_axway_password=axway
+$export ldap_axway_url=ldap://localhost:389
+```
+- JMS Environment Variable
+```bash
+$export jms_axway_username=axway
+$export jms_axway_password=axway
+$export jms_axway_url=ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617
 ```
 - SMTP password
 ```bash

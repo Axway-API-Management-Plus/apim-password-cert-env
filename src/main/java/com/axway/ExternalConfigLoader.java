@@ -15,6 +15,7 @@ import java.security.Principal;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class ExternalConfigLoader implements LoadableModule {
@@ -40,12 +41,22 @@ public class ExternalConfigLoader implements LoadableModule {
         log.info("Loading configuration Password and Certificate Environment variable Module");
         EntityStore entityStore = configContext.getStore();
         updatePassword(entityStore);
-     }
+    }
 
-    public void updatePassword(EntityStore entityStore) {
+    private void updatePassword(EntityStore entityStore) {
         Map<String, String> envValues = System.getenv();
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
+
+        Map<String, String> ldap = envValues.entrySet()
+                .stream()
+                .filter(map -> map.getKey().startsWith("ldap_"))
+                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+
+        Map<String, String> jms = envValues.entrySet()
+                .stream()
+                .filter(map -> map.getKey().startsWith("jms_"))
+                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
 
         while (keysIterator.hasNext()) {
             String key = keysIterator.next();
@@ -57,9 +68,6 @@ public class ExternalConfigLoader implements LoadableModule {
             if (key.startsWith("db")) {
                 log.info("Updating db password for DB connection : " + filterName);
                 shorthandKey = "/[DbConnectionGroup]name=Database Connections/[DbConnection]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
-            } else if (key.startsWith("ldap")) {
-                shorthandKey = "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
             } else if (key.startsWith("smtp")) {
                 shorthandKey = "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName;
@@ -87,8 +95,6 @@ public class ExternalConfigLoader implements LoadableModule {
 
             } else if (key.startsWith("cert_")) {
                 importPublicCertificate(passwordValue, entityStore);
-            } else if (key.startsWith("cassandraCertDname")) {
-
             } else if (key.startsWith("cassandraCert")) {
                 String alias = importPublicCertificate(passwordValue, entityStore);
                 String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
@@ -103,16 +109,66 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
             }
-
         }
 
+        List<Credential> credentials = parseCred(ldap, "ldap");
+        if (!credentials.isEmpty()) {
+            for (Credential credential : credentials) {
+                updateLdap(entityStore, credential);
+            }
+        }
 
+        credentials = parseCred(ldap, "jms");
+        if (!credentials.isEmpty()) {
+            for (Credential credential : credentials) {
+                updateJMS(entityStore, credential);
+            }
+        }
     }
 
-    public void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String value, Object secret) {
+    private List<Credential> parseCred(Map<String, String> envMap, String connectorName) {
+
+        List<Credential> credentials = new ArrayList<>();
+        if (envMap != null && !envMap.isEmpty()) {
+            Iterator<String> keyIterator = envMap.keySet().iterator();
+            while (keyIterator.hasNext()) {
+                String key = keyIterator.next();
+                String[] delimitedKeys = key.split("_");
+                String filterName;
+                if (delimitedKeys.length == 3) {
+                    filterName = delimitedKeys[1];
+                } else {
+                    envMap.remove(key);
+                    keyIterator = envMap.keySet().iterator();
+                    continue;
+                }
+                String prefix = connectorName + "_" + filterName + "_";
+                String userNameVar = prefix + "username";
+                String passwordVar = prefix + "password";
+                String urlVar = prefix + "url";
+                String username = envMap.get(userNameVar);
+                String password = envMap.get(passwordVar);
+                String url = envMap.get(urlVar);
+
+                envMap.remove(userNameVar);
+                envMap.remove(passwordVar);
+                envMap.remove(urlVar);
+                Credential credential = new Credential();
+                credential.setUrl(url);
+                credential.setPassword(password);
+                credential.setUsername(username);
+                credential.setFilterName(filterName);
+                credentials.add(credential);
+                keyIterator = envMap.keySet().iterator();
+            }
+        }
+        return credentials;
+    }
+
+    private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
+            value, Object secret) {
         Trace.info("updating password");
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+        Entity entity = getEntity(entityStore, shorthandKey);
         if (entity == null)
             return;
         value = Base64.getEncoder().encodeToString(value.getBytes());
@@ -121,11 +177,51 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
+    private Entity getEntity(EntityStore entityStore, String shorthandKey) {
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        return shorthandKeyFinder.getEntity(shorthandKey);
+    }
+
+    private void setUsernameAndPassword(Credential credential, Entity entity) {
+        String password = credential.getPassword();
+        password = Base64.getEncoder().encodeToString(password.getBytes());
+        //passwordCipher.encrypt()
+        entity.setStringField("password", password);
+        String username = credential.getUsername();
+        if (username != null) {
+            entity.setStringField("userName", username);
+        }
+    }
+
+    private void updateLdap(EntityStore entityStore, Credential credential) {
+        Trace.info("updating LDAP");
+        Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + credential.getFilterName());
+        if (entity == null)
+            return;
+        setUsernameAndPassword(credential, entity);
+        String url = credential.getUrl();
+        if (url != null) {
+            entity.setStringField("url", url);
+        }
+        entityStore.updateEntity(entity);
+    }
+
+    private void updateJMS(EntityStore entityStore, Credential credential) {
+        Trace.info("updating JMS");
+        Entity entity = getEntity(entityStore,"[JMSServiceGroup]name=JMS Services/[JMSService]name=" + credential.getFilterName());
+        if (entity == null)
+            return;
+        setUsernameAndPassword(credential, entity);
+        String url = credential.getUrl();
+        if (url != null) {
+            entity.setStringField("providerURL", url);
+        }
+        entityStore.updateEntity(entity);
+    }
+
     private void updateCassandraCert(EntityStore entityStore, String escapedAlias) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        //  entityStore.getEntity(shorthandKeyFinder)
-        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+        Entity entity = getEntity(entityStore, shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
             //String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
@@ -174,7 +270,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
-    public void configureP12(EntityStore entityStore, String name, String alias) {
+    private void configureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + name;
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
@@ -190,7 +286,7 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    public PortableESPK getCertEntity(EntityStore entityStore, String alias) {
+    private PortableESPK getCertEntity(EntityStore entityStore, String alias) {
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
@@ -203,7 +299,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    public String importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
+    private String importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
         PKCS12 pkcs12 = certHelper.parseP12(cert, password);
         String alias = pkcs12.getAlias();
@@ -233,10 +329,6 @@ public class ExternalConfigLoader implements LoadableModule {
             certEntity.setStringField("key", key);
             entityStore.addEntity(groups.iterator().next(), certEntity);
         }
-
         return alias;
-
     }
-
-
 }
