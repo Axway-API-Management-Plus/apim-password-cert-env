@@ -41,9 +41,11 @@ $export jms_axway_username=axway
 $export jms_axway_password=axway
 $export jms_axway_url=ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617
 ```
-- SMTP password
+- SMTP API manager Environment variable - updates SMTP server and alert configurations
 ```bash
-$export smtp_manager=changme
+$export smtp_manager_username=rnatarajan
+$export smtp_manager_password=changeme
+$export smtp_manager_url=smtp.axway.com
 ```
 - HTTP Basic
 ```bash

@@ -58,6 +58,12 @@ public class ExternalConfigLoader implements LoadableModule {
                 .filter(map -> map.getKey().startsWith("jms_"))
                 .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
 
+        Map<String, String> smtp = envValues.entrySet()
+                .stream()
+                .filter(map -> map.getKey().startsWith("smtp_"))
+                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+
+
         while (keysIterator.hasNext()) {
             String key = keysIterator.next();
             if (!key.contains("_"))
@@ -69,10 +75,12 @@ public class ExternalConfigLoader implements LoadableModule {
                 log.info("Updating db password for DB connection : " + filterName);
                 shorthandKey = "/[DbConnectionGroup]name=Database Connections/[DbConnection]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
-            } else if (key.startsWith("smtp")) {
-                shorthandKey = "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
-            } else if (key.startsWith("httpbasic")) {
+            }
+//            else if (key.startsWith("smtp")) {
+//                shorthandKey = "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName;
+//                updatePasswordField(entityStore, shorthandKey, "password", passwordValue, null);
+//            }
+            else if (key.startsWith("httpbasic")) {
                 shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
                 updatePasswordField(entityStore, shorthandKey, "httpAuthPass", passwordValue, null);
             } else if (key.startsWith("radius")) {
@@ -122,6 +130,15 @@ public class ExternalConfigLoader implements LoadableModule {
         if (!credentials.isEmpty()) {
             for (Credential credential : credentials) {
                 updateJMS(entityStore, credential);
+            }
+        }
+
+        credentials = parseCred(ldap, "smtp");
+        if (!credentials.isEmpty()) {
+            for (Credential credential : credentials) {
+                updateSMTP(entityStore, credential);
+                updateAlertSMTP(entityStore, credential);
+
             }
         }
     }
@@ -182,11 +199,13 @@ public class ExternalConfigLoader implements LoadableModule {
         return shorthandKeyFinder.getEntity(shorthandKey);
     }
 
-    private void setUsernameAndPassword(Credential credential, Entity entity) {
+    private void setUsernameAndPassword(Credential credential, Entity entity, String usernameFieldName) {
         String password = credential.getPassword();
-        password = Base64.getEncoder().encodeToString(password.getBytes());
-        //passwordCipher.encrypt()
-        entity.setStringField("password", password);
+        if(password != null) {
+            password = Base64.getEncoder().encodeToString(password.getBytes());
+            //passwordCipher.encrypt()
+            entity.setStringField("password", password);
+        }
         String username = credential.getUsername();
         if (username != null) {
             entity.setStringField("userName", username);
@@ -198,7 +217,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + credential.getFilterName());
         if (entity == null)
             return;
-        setUsernameAndPassword(credential, entity);
+        setUsernameAndPassword(credential, entity, "userName");
         String url = credential.getUrl();
         if (url != null) {
             entity.setStringField("url", url);
@@ -211,12 +230,41 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity entity = getEntity(entityStore,"[JMSServiceGroup]name=JMS Services/[JMSService]name=" + credential.getFilterName());
         if (entity == null)
             return;
-        setUsernameAndPassword(credential, entity);
+        setUsernameAndPassword(credential, entity, "userName");
         String url = credential.getUrl();
         if (url != null) {
             entity.setStringField("providerURL", url);
         }
         entityStore.updateEntity(entity);
+    }
+
+    private void updateSMTP(EntityStore entityStore, Credential credential){
+        Entity entity;
+        if(credential.getFilterName().equalsIgnoreCase("manager")){
+            entity = getEntity(entityStore,"/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=Portal SMTP");
+
+        }else{
+            entity = getEntity(entityStore,"/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + credential.getFilterName());
+        }
+        setUsernameAndPassword(credential, entity, "username");
+
+        String host = credential.getUrl();
+        if(host != null){
+            entity.setStringField("smtpServer", host);
+        }
+        entityStore.updateEntity(entity);
+    }
+
+    private void updateAlertSMTP(EntityStore entityStore, Credential credential){
+        if(credential.getFilterName().equalsIgnoreCase("manager")){
+            Entity entity = getEntity(entityStore,"/[AlertManager]name=Default Alert Configuration/[EmailAlertSystem]name=API Manager Email Alerts");
+            setUsernameAndPassword(credential, entity, "username");
+            String host = credential.getUrl();
+            if(host != null){
+                entity.setStringField("smtp", host);
+            }
+            entityStore.updateEntity(entity);
+        }
     }
 
     private void updateCassandraCert(EntityStore entityStore, String escapedAlias) {
@@ -229,7 +277,6 @@ public class ExternalConfigLoader implements LoadableModule {
             entity.setReferenceField("sslTrustedCerts", portableESPK);
             entityStore.updateEntity(entity);
         }
-
     }
 
     // Trust CA certs
