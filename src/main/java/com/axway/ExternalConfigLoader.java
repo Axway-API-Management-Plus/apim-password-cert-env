@@ -11,6 +11,7 @@ import com.vordel.trace.Trace;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.security.Principal;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -107,7 +108,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 String alias = importPublicCertificate(passwordValue, entityStore);
                 String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
                 updateCassandraCert(entityStore, escapedAlias);
-            } else if (key.startsWith("certandkey")) {
+            } else if (key.startsWith("certandkey_")) {
                 try {
                     char[] password = System.getenv("certandkeypassword" + "_" + filterName).toCharArray();
                     String alias = importP12(entityStore, passwordValue, password);
@@ -126,14 +127,14 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
 
-        credentials = parseCred(ldap, "jms");
+        credentials = parseCred(jms, "jms");
         if (!credentials.isEmpty()) {
             for (Credential credential : credentials) {
                 updateJMS(entityStore, credential);
             }
         }
 
-        credentials = parseCred(ldap, "smtp");
+        credentials = parseCred(smtp, "smtp");
         if (!credentials.isEmpty()) {
             for (Credential credential : credentials) {
                 updateSMTP(entityStore, credential);
@@ -227,7 +228,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private void updateJMS(EntityStore entityStore, Credential credential) {
         Trace.info("updating JMS");
-        Entity entity = getEntity(entityStore,"[JMSServiceGroup]name=JMS Services/[JMSService]name=" + credential.getFilterName());
+        Entity entity = getEntity(entityStore,"/[JMSServiceGroup]name=JMS Services/[JMSService]name=" + credential.getFilterName());
         if (entity == null)
             return;
         setUsernameAndPassword(credential, entity, "userName");
@@ -348,7 +349,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private String importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
-        PKCS12 pkcs12 = certHelper.parseP12(cert, password);
+        PKCS12 pkcs12 = certHelper.parseP12(new File(cert), password);
         String alias = pkcs12.getAlias();
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);

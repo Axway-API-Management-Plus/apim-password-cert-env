@@ -1,17 +1,15 @@
 package com.axway;
 
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Base64;
 
 public class CertHelperTest {
 
@@ -19,17 +17,17 @@ public class CertHelperTest {
 
     @Test
     public void testP12() {
-        InputStream inputStream = ClassLoader.getSystemResourceAsStream("test.p12");
-        byte[] data = new byte[0];
+//        InputStream inputStream = ClassLoader.getSystemResourceAsStream("test.p12");
+//        byte[] data = new byte[0];
+//        try {
+//            data = IOUtils.toByteArray(inputStream);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        String content = Base64.getEncoder().encodeToString(data);
+//        System.out.println(content);
         try {
-            data = IOUtils.toByteArray(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        String content = Base64.getEncoder().encodeToString(data);
-        System.out.println(content);
-        try {
-            PKCS12 pkcs12 = certHelper.parseP12(content, "changeit".toCharArray());
+            PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("test.p12").getFile()), "changeit".toCharArray());
             System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
             System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException e) {
