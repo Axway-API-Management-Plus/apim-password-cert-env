@@ -17,7 +17,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <api.version>7.7</api.version>
-    <apim.lib.path>D:\Axway\Axway-7.7.0\apigateway\system\lib</apim.lib.path>
+    <apim.lib.path>/Users/rnatarajan/AxwayProducts/apim_7_7/lib</apim.lib.path>
 
   </properties>
 
@@ -35,7 +35,7 @@
       <artifactId>apigw-common</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\apigw-common-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\apigw-common-7.7.0.1-4.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -43,7 +43,7 @@
       <artifactId>vordel-trace</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-trace-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\vordel-trace-7.7.0.1-4.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -69,7 +69,7 @@
       <artifactId>es-core</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\es-core-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\es-core-7.7.0.1-4.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -77,7 +77,7 @@
       <artifactId>vordel-common</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-common-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\vordel-common-7.7.0.1-4.jar</systemPath>
     </dependency>
 
     <dependency>
@@ -85,7 +85,7 @@
       <artifactId>vordel-system</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-system-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\vordel-system-7.7.0.1-4.jar</systemPath>
     </dependency>
 
 
@@ -94,7 +94,7 @@
       <artifactId>vordel-config</artifactId>
       <scope>system</scope>
       <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-config-7.7.0-4.jar</systemPath>
+      <systemPath>${apim.lib.path}\plugins\vordel-config-7.7.0.1-4.jar</systemPath>
     </dependency>
 
 

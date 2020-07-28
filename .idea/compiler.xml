@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="apim-env-module" />
+        <module name="apim-password-cert-env" />
       </profile>
     </annotationProcessing>
   </component>
