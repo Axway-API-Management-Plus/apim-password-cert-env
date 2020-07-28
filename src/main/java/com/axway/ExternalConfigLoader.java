@@ -95,6 +95,18 @@ public class ExternalConfigLoader implements LoadableModule {
 
             } else if (key.startsWith("cert_")) {
                 importPublicCertificate(passwordValue, entityStore);
+            } else if (key.startsWith("disablehttps_")) {
+                if(passwordValue.equalsIgnoreCase("true")){
+                    disableInterface(entityStore, filterName, "SSLInterface");
+                }
+            } else if (key.startsWith("disablehttp_")) {
+                if(passwordValue.equalsIgnoreCase("true")){
+                    disableInterface(entityStore, filterName, "InetInterface");
+                }
+            } else if (key.equalsIgnoreCase("cassandra_disablessl")) {
+                if(passwordValue.equalsIgnoreCase("true")){
+                    disableCassandraSSL(entityStore);
+                }
             } else if (key.startsWith("cassandraCert")) {
                 String alias = importPublicCertificate(passwordValue, entityStore);
                 String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
@@ -272,6 +284,29 @@ public class ExternalConfigLoader implements LoadableModule {
             entity.setReferenceField("sslTrustedCerts", portableESPK);
             entityStore.updateEntity(entity);
         }
+    }
+    
+    private void disableCassandraSSL(EntityStore entityStore) {
+        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
+        Entity entity = getEntity(entityStore, shorthandKey);
+        entity.setBooleanField("useSSL", false);
+        entityStore.updateEntity(entity);
+        Trace.info("Disabled Cassandra SSL");
+    }
+
+    // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
+    private void disableInterface(EntityStore entityStore, String name, String interfaceType) {
+        String shorthandKey = "/[NetService]name=Service/[HTTP]**/["+interfaceType+"]name=" + name;
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
+        if (entities.isEmpty()) {
+            Trace.error("Listener interface is not available");
+            return;
+        }
+        Entity entity = entities.get(0);
+        entity.setBooleanField("enabled", false);
+        entityStore.updateEntity(entity);
+        Trace.info("Disabled Interface: " + name);
     }
 
     // Trust CA certs
