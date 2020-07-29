@@ -70,6 +70,28 @@ $export smtp_manager_url=smtp.axway.com
 ```bash
 $export httpbasic_backend=changme
 ```
+
+- Disable Cassandra SSL
+```bash
+$export cassandra_disablessl=true
+```
+
+- Disable HTTPS Interfaces
+
+```bash
+##replace 'portname' with your HTTPS Port Name
+
+$export disablehttps_portname=true
+```
+
+- Disable HTTP Interfaces
+
+```bash
+##replace 'portname' with your HTTP Port Name
+
+$export disablehttp_portname=true
+```
+
 - Radius 
 ```bash
 ```
@@ -225,23 +247,19 @@ $./run.sh publish/publish.py -i /home/axway/apim-policy-password-cert-env/src/ma
 ```
 The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new value. 
 
-- Disable Cassandra SSL
-```bash
-$export cassandra_disablessl=true
-```
+## Contributing
 
-- Disable HTTPS Interfaces
+![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)  
 
-```bash
-##replace 'portname' with your HTTPS Port Name
+Please read [Contributing.md](https://github.com/Axway-API-Management-Plus/Common/blob/master/Contributing.md) for details on our code of conduct, and the process for submitting pull requests to us.  
+Also please read this page on [how to contribute](https://github.com/Axway-API-Management-Plus/apimanager-swagger-promote/wiki/7.1-Contribute-to-this-project) to this project.
 
-$export disablehttps_portname=true
-```
+## Team
 
-- Disable HTTP Interfaces
+![alt text][Axwaylogo] Axway Team
 
-```bash
-##replace 'portname' with your HTTP Port Name
+[Axwaylogo]: https://github.com/Axway-API-Management/Common/blob/master/img/AxwayLogoSmall.png  "Axway logo"
 
-$export disablehttp_portname=true
-```
+
+## License
+[Apache License 2.0](/LICENSE)
