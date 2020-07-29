@@ -251,7 +251,6 @@ public class ExternalConfigLoader implements LoadableModule {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + credential.getFilterName());
         }
         setUsernameAndPassword(credential, entity, "username");
-
         String host = credential.getUrl();
         if (host != null) {
             entity.setStringField("smtpServer", host);
