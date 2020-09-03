@@ -27,8 +27,8 @@ public class CertHelperTest {
 //        String content = Base64.getEncoder().encodeToString(data);
 //        System.out.println(content);
         try {
-            PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("test.p12").getFile()), "changeit".toCharArray());
-            System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
+            PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("certificate.p12").getFile()), "changeit".toCharArray());
+           // System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
             System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException e) {
             e.printStackTrace();

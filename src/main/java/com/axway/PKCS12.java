@@ -5,7 +5,7 @@ import java.security.cert.Certificate;
 
 public class PKCS12 {
 
-    private Certificate certificate;
+    private Certificate[] certificates;
     private PrivateKey privateKey;
     private String alias;
 
@@ -17,14 +17,6 @@ public class PKCS12 {
         this.alias = alias;
     }
 
-    public Certificate getCertificate() {
-        return certificate;
-    }
-
-    public void setCertificate(Certificate certificate) {
-        this.certificate = certificate;
-    }
-
     public PrivateKey getPrivateKey() {
         return privateKey;
     }
@@ -33,5 +25,11 @@ public class PKCS12 {
         this.privateKey = privateKey;
     }
 
+    public Certificate[] getCertificates() {
+        return certificates;
+    }
 
+    public void setCertificates(Certificate[] certificates) {
+        this.certificates = certificates;
+    }
 }

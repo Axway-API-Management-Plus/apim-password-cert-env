@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.security.Principal;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
@@ -52,17 +53,21 @@ public class ExternalConfigLoader implements LoadableModule {
         Map<String, String> ldap = envValues.entrySet()
                 .stream()
                 .filter(map -> map.getKey().startsWith("ldap_"))
-                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        Map<String, String> jms = envValues.entrySet()
-                .stream()
-                .filter(map -> map.getKey().startsWith("jms_"))
-                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+        Map<String, String> jms = new HashMap<>();
+        for (Map.Entry<String, String> stringStringEntry : envValues.entrySet()) {
+            if (stringStringEntry.getKey().startsWith("jms_")) {
+                if (jms.put(stringStringEntry.getKey(), stringStringEntry.getValue()) != null) {
+                    throw new IllegalStateException("Duplicate key");
+                }
+            }
+        }
 
         Map<String, String> smtp = envValues.entrySet()
                 .stream()
                 .filter(map -> map.getKey().startsWith("smtp_"))
-                .collect(Collectors.toMap(map -> map.getKey(), map -> map.getValue()));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 
         while (keysIterator.hasNext()) {
@@ -94,23 +99,35 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
 
             } else if (key.startsWith("cert_")) {
-                importPublicCertificate(passwordValue, entityStore);
+                try {
+                    X509Certificate certificate = certHelper.parseX509(passwordValue);
+                    importPublicCertificate(certificate, entityStore);
+                } catch (CertificateException e) {
+                    Trace.error("Unable to add the certs from Environment variable", e);
+                }
             } else if (key.startsWith("disablehttps_")) {
-                if(passwordValue.equalsIgnoreCase("true")){
+                if (passwordValue.equalsIgnoreCase("true")) {
                     disableInterface(entityStore, filterName, "SSLInterface");
                 }
             } else if (key.startsWith("disablehttp_")) {
-                if(passwordValue.equalsIgnoreCase("true")){
+                if (passwordValue.equalsIgnoreCase("true")) {
                     disableInterface(entityStore, filterName, "InetInterface");
                 }
             } else if (key.equalsIgnoreCase("cassandra_disablessl")) {
-                if(passwordValue.equalsIgnoreCase("true")){
+                if (passwordValue.equalsIgnoreCase("true")) {
                     disableCassandraSSL(entityStore);
                 }
             } else if (key.startsWith("cassandraCert")) {
-                String alias = importPublicCertificate(passwordValue, entityStore);
-                String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-                updateCassandraCert(entityStore, escapedAlias);
+                try {
+                    X509Certificate certificate = certHelper.parseX509(passwordValue);
+                    String alias = importPublicCertificate(certificate, entityStore);
+                    if(alias != null) {
+                        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+                        updateCassandraCert(entityStore, escapedAlias);
+                    }
+                } catch (CertificateException e) {
+                    Trace.error("Unable to add Cassandra certificate from Environment variable", e);
+                }
             } else if (key.startsWith("certandkey_")) {
                 try {
                     char[] password = System.getenv("certandkeypassword" + "_" + filterName).toCharArray();
@@ -261,7 +278,7 @@ public class ExternalConfigLoader implements LoadableModule {
     private void updateAlertSMTP(EntityStore entityStore, Credential credential) {
         if (credential.getFilterName().equalsIgnoreCase("manager")) {
             Entity entity = getEntity(entityStore, "/[AlertManager]name=Default Alert Configuration/[EmailAlertSystem]name=API Manager Email Alerts");
-            if(entity == null){
+            if (entity == null) {
                 return;
             }
             setUsernameAndPassword(credential, entity, "username");
@@ -279,12 +296,14 @@ public class ExternalConfigLoader implements LoadableModule {
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
             //String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
-            PortableESPK portableESPK = getCertEntity(entityStore, escapedAlias);
+            Entity certEntity = getCertEntity(entityStore, escapedAlias);
+            PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
+            // PortableESPK portableESPK = getCertEntity(entityStore, escapedAlias);
             entity.setReferenceField("sslTrustedCerts", portableESPK);
             entityStore.updateEntity(entity);
         }
     }
-    
+
     private void disableCassandraSSL(EntityStore entityStore) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
@@ -295,7 +314,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
     private void disableInterface(EntityStore entityStore, String name, String interfaceType) {
-        String shorthandKey = "/[NetService]name=Service/[HTTP]**/["+interfaceType+"]name=" + name;
+        String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + name;
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
         if (entities.isEmpty()) {
@@ -308,20 +327,13 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("Disabled Interface: " + name);
     }
 
-    // Trust CA certs
-    private String importPublicCertificate(String base64EncodedCert, EntityStore entityStore) {
-
-        String shorthandKey = "/[Certificates]name=Certificate Store";
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
+    // Trust CA Certs
+    private String importPublicCertificate(X509Certificate certificate, EntityStore entityStore) {
         try {
-            Trace.info("Cert :" + base64EncodedCert);
-            X509Certificate certificate = certHelper.parseX509(base64EncodedCert);
             Principal principal = certificate.getSubjectDN();
             final String alias = principal.getName();
             String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-            shorthandKey = "[Certificate]dname=" + escapedAlias;
-            Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
+            Entity certEntity = getCertEntity(entityStore, escapedAlias);
             Trace.info("Alias :" + alias);
 
             if (certEntity == null) {
@@ -330,20 +342,19 @@ public class ExternalConfigLoader implements LoadableModule {
                 ESPK rootPK = entityStore.getRootPK();
                 EntityType group = entityStore.getTypeForName("Certificates");
                 Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
-                certEntity.setStringField("dname", alias);
+                certEntity.setStringField("dname", escapedAlias);
                 certEntity.setBinaryValue("content", certificate.getEncoded());
                 entityStore.addEntity(groups.iterator().next(), certEntity);
             } else {
-                Trace.info("Updating cert with alias " + alias);
+                Trace.info("Updating cert with alias " + escapedAlias);
                 certEntity.setBinaryValue("content", certificate.getEncoded());
                 entityStore.updateEntity(certEntity);
             }
-            return alias;
+            return escapedAlias;
         } catch (CertificateException e) {
             Trace.error("Unable to add the certs from Environment variable", e);
         }
         return null;
-
     }
 
     private void configureP12(EntityStore entityStore, String name, String alias) {
@@ -356,22 +367,23 @@ public class ExternalConfigLoader implements LoadableModule {
             return;
         }
         Entity entity = entities.get(0);
-        PortableESPK portableESPK = getCertEntity(entityStore, alias);
+        Entity certEntity = getCertEntity(entityStore, alias);
+        PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
         //Trace.info("Portable : " + portableESPK);
         entity.setReferenceField("serverCert", portableESPK);
         entityStore.updateEntity(entity);
     }
 
-    private PortableESPK getCertEntity(EntityStore entityStore, String alias) {
+    private Entity getCertEntity(EntityStore entityStore, String alias) {
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         shorthandKey = "[Certificate]dname=" + alias;
         //See if the certificate alias already exists in the entity store,
         //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
-        Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
+        return shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
         //Trace.info("PK : " + certEntity.getPK());
-        return PortableESPK.toPortableKey(entityStore, certEntity.getPK());
+        //return PortableESPK.toPortableKey(entityStore, certEntity.getPK());
     }
 
 
@@ -379,31 +391,46 @@ public class ExternalConfigLoader implements LoadableModule {
 
         PKCS12 pkcs12 = certHelper.parseP12(new File(cert), password);
         String alias = pkcs12.getAlias();
-        String shorthandKey = "/[Certificates]name=Certificate Store";
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-        shorthandKey = "[Certificate]dname=" + escapedAlias;
-        //See if the certificate alias already exists in the entity store,
-        //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
-        Entity certEntity = shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
+        Certificate[] certificates = pkcs12.getCertificates();
+        Entity certEntity = getCertEntity(entityStore, escapedAlias);
         if (certEntity != null) {
             //certEntity.setBinaryValue();
             //Updates the existing certificate in the certstore
-            certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
-            String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
-            certEntity.setStringField("key", key);
-            entityStore.updateEntity(certEntity);
+            for (int i = 0; i < certificates.length; i++) {
+                if (i == 0) {
+                    certEntity.setBinaryValue("content", certificates[i].getEncoded());
+                    String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
+                    certEntity.setStringField("key", key);
+                    entityStore.updateEntity(certEntity);
+                } else {
+                    //handle CA Certificate chain
+                    X509Certificate certificate = (X509Certificate) certificates[i];
+                    importPublicCertificate(certificate, entityStore);
+                }
+
+            }
+
         } else {
             ESPK rootPK = entityStore.getRootPK();
             EntityType group = entityStore.getTypeForName("Certificates");
             Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
             certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
-            certEntity.setStringField("dname", alias);
-            certEntity.setBinaryValue("content", pkcs12.getCertificate().getEncoded());
-            String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
-            certEntity.setStringField("key", key);
-            entityStore.addEntity(groups.iterator().next(), certEntity);
+
+            for (int i = 0; i < certificates.length; i++) {
+                if (i == 0) {
+                    certEntity.setStringField("dname", escapedAlias);
+                    certEntity.setBinaryValue("content", certificates[i].getEncoded());
+                    String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
+                    certEntity.setStringField("key", key);
+                    entityStore.addEntity(groups.iterator().next(), certEntity);
+                } else {
+                    //handle CA Certificate chain
+                    X509Certificate certificate = (X509Certificate) certificates[i];
+                    importPublicCertificate(certificate, entityStore);
+                }
+
+            }
         }
         return alias;
     }
