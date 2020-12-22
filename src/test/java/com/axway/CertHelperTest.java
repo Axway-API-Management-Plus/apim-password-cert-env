@@ -4,6 +4,7 @@ package com.axway;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -27,8 +28,8 @@ public class CertHelperTest {
 //        String content = Base64.getEncoder().encodeToString(data);
 //        System.out.println(content);
         try {
-            PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("test.p12").getFile()), "changeit".toCharArray());
-            System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
+            PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("certificate.p12").getFile()), "changeit".toCharArray());
+           // System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
             System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException e) {
             e.printStackTrace();
@@ -71,7 +72,7 @@ public class CertHelperTest {
             X509Certificate certificate = certHelper.parseX509(cert);
             String name = certificate.getSubjectDN().getName();
             System.out.println(name);
-        } catch (CertificateException e) {
+        } catch (CertificateException | FileNotFoundException e) {
             e.printStackTrace();
         }
     }
