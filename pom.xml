@@ -1,133 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.axway</groupId>
-  <artifactId>apim-env-module</artifactId>
-  <version>1.1.1</version>
+    <groupId>com.axway</groupId>
+    <artifactId>apim-env-module</artifactId>
+    <version>1.1.1</version>
 
-  <name>apim-env-module</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+    <name>apim-env-module</name>
+    <url>https://axway.com</url>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <api.version>7.7</api.version>
-    <apim.lib.path>/Users/rnatarajan/AxwayProducts/apim_7_7/lib</apim.lib.path>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <api.version>7.7</api.version>
+        <apim.lib.path>/Users/rnatarajan/AxwayProducts/apim_7_7/lib</apim.lib.path>
+    </properties>
 
-  </properties>
-
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-
-
-    <dependency>
-      <groupId>apigw-common</groupId>
-      <artifactId>apigw-common</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\apigw-common-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-    <dependency>
-      <groupId>vordel-trace</groupId>
-      <artifactId>vordel-trace</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-trace-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-    <dependency>
-      <groupId>server</groupId>
-      <artifactId>server</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\server.jar</systemPath>
-    </dependency>
-
-
-    <dependency>
-      <groupId>precipitate</groupId>
-      <artifactId>precipitate</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\precipitate.jar</systemPath>
-    </dependency>
-
-
-    <dependency>
-      <groupId>es-core</groupId>
-      <artifactId>es-core</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\es-core-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-    <dependency>
-      <groupId>vordel-common</groupId>
-      <artifactId>vordel-common</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-common-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-    <dependency>
-      <groupId>vordel-system</groupId>
-      <artifactId>vordel-system</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-system-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-
-    <dependency>
-      <groupId>vordel-config</groupId>
-      <artifactId>vordel-config</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\vordel-config-7.7.0.1-4.jar</systemPath>
-    </dependency>
-
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>2.11.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>2.13.2</version>
-    </dependency>
-
-
-
-
-  </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.0.2</version>
-        <configuration>
-          <excludes>
-            <exclude>instance.xml</exclude>
-            <exclude>ExternalConfigLoadableModule.xml</exclude>
-            <exclude>typeSet.xml</exclude>
-           </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>apigw-common</groupId>
+            <artifactId>apigw-common</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/apigw-common-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>vordel-trace</groupId>
+            <artifactId>vordel-trace</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/vordel-trace-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>server</groupId>
+            <artifactId>server</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/server.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>precipitate</groupId>
+            <artifactId>precipitate</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/precipitate.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>es-core</groupId>
+            <artifactId>es-core</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/es-core-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>vordel-common</groupId>
+            <artifactId>vordel-common</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/vordel-common-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>vordel-system</groupId>
+            <artifactId>vordel-system</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/vordel-system-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>vordel-config</groupId>
+            <artifactId>vordel-config</artifactId>
+            <scope>system</scope>
+            <version>${api.version}</version>
+            <systemPath>${apim.lib.path}/plugins/vordel-config-7.7.0.1-4.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.11.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.13.2</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>instance.xml</exclude>
+                        <exclude>ExternalConfigLoadableModule.xml</exclude>
+                        <exclude>typeSet.xml</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

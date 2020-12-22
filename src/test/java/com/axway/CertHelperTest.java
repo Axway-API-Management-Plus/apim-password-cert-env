@@ -4,6 +4,7 @@ package com.axway;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -71,7 +72,7 @@ public class CertHelperTest {
             X509Certificate certificate = certHelper.parseX509(cert);
             String name = certificate.getSubjectDN().getName();
             System.out.println(name);
-        } catch (CertificateException e) {
+        } catch (CertificateException | FileNotFoundException e) {
             e.printStackTrace();
         }
     }
