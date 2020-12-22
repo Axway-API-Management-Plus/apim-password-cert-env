@@ -98,7 +98,7 @@ $export disablehttp_portname=true
 
 - Cassandra Certificate reference
 ```bash
-export cassandraCert_root="-----BEGIN CERTIFICATE-----
+$export cassandraCert_root="-----BEGIN CERTIFICATE-----
 MIICxDCCAaygAwIBAgIGAW5HwjW7MA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMM
 BkRvbWFpbjAgFw0xOTEwMzEyMTI1NDBaGA8yMTE5MTAxNDIxMjU0MFowETEPMA0G
 A1UEAwwGRG9tYWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlX2n
@@ -115,6 +115,8 @@ yRw3ffr/trqh2B5tzwJMnWsakRwAtooRJ2RZ8ufQUhEYdI/7KJajZDQ0IFxleyPZ
 PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6
 6Xi8yAoGAN92VRi93iss3A7zoAsrPXCO7pNZdz3QzJ3Jjv9KW48DmQ==
 -----END CERTIFICATE-----" 
+## Use file path - file should be created via config map / mount
+$export cassandraCert_root = /opt/Axway/apigateway/certs/cassandra.pem
 ```
 
 - x509 Cert - to trust the backend root and intermediate certificates. In order to use the feature, connect to URL filter should be enabled with "trust all Certificates in the certificate store"
@@ -144,7 +146,7 @@ Classic Example
 ```bash
 $export cert_domain=`cat cert.pem`
 ## Use file path - file should be created via config map / mount
-export certandkey_secureport = /opt/Axway/apigateway/certs/cert.pem
+$export cert_domain = /opt/Axway/apigateway/certs/cert.pem
 ```
 
 
