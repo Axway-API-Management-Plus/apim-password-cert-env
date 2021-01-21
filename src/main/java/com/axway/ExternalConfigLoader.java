@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class ExternalConfigLoader implements LoadableModule {
 
     private static final Logger log = LogManager.getLogger(ExternalConfigLoader.class);
-    private CertHelper certHelper = new CertHelper();
+    private final CertHelper certHelper = new CertHelper();
     private PasswordCipher passwordCipher;
 
 
