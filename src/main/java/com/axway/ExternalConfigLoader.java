@@ -138,6 +138,15 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
+            }else if (key.startsWith("connecttourl_certandkey_")) {
+                try {
+                    char[] password = System.getenv("connecttourl_certandkeypassword" + "_" + filterName).toCharArray();
+                    String alias = importP12(entityStore, passwordValue, password);
+                    Trace.info("P12 file alias name :" + alias);
+                    connectToURLConfigureP12(entityStore, filterName, alias);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the p12 from Environment variable", e);
+                }
             }
         }
 
@@ -362,20 +371,52 @@ public class ExternalConfigLoader implements LoadableModule {
     private void configureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + name;
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
+        //ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        //List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Listener interface is not available");
             return;
+        }else if(entities.size() > 1){
+            Trace.error("Found more than one Listener interface");
+            return;
         }
         Entity entity = entities.get(0);
+        String fieldName = "serverCert";
+        updateP12Cert(entityStore, entity, alias, fieldName);
+    }
+
+    private List<Entity> getEntities(EntityStore entityStore, String shorthandKey){
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        return shorthandKeyFinder.getEntities(shorthandKey);
+    }
+
+    private void updateP12Cert(EntityStore entityStore, Entity entity, String alias, String fieldName){
+
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
         //Trace.info("Certificate entity set to listener interface "+ certEntity);
         PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
         //Trace.info("Portable : " + portableESPK);
-        entity.setReferenceField("serverCert", portableESPK);
+        entity.setReferenceField(fieldName, portableESPK);
         entityStore.updateEntity(entity);
+    }
+
+    private void connectToURLConfigureP12(EntityStore entityStore, String name, String alias) {
+
+        String shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
+        //ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
+        if (entities.isEmpty()) {
+            Trace.error("Unable to find connect to URL filter");
+            return;
+        }else if(entities.size() > 1){
+            Trace.error("Found more than one connect to URL filter");
+            return;
+        }
+        Entity entity = entities.get(0);
+        String fieldName = "sslusers";
+        updateP12Cert(entityStore, entity, alias, fieldName);
     }
 
     private Entity getCertEntity(EntityStore entityStore, String alias) {
@@ -393,7 +434,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private String importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
-        PKCS12 pkcs12 = null;
+        PKCS12 pkcs12;
         File file = new File(cert);
         if(file.exists()){
             pkcs12 = certHelper.parseP12(file, password);
