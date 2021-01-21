@@ -195,7 +195,7 @@ $export connecttourl_certandkey_sslauth = /opt/Axway/apigateway/certs/cert.p12
 # Use k8s secret to manage password
 $export connecttourl_certandkey_sslauth=changeit
 ```
-**sslauth** is the name of  Connect to URL filter.
+**sslauth** is the name of  Connect to URL filter **WARNING**: Do not use blank spaces in Connect to URL filter name. 
 
 ![secureport Interface](images/connect2urlsslauth.PNG)
 
@@ -214,7 +214,7 @@ $export certandkey_secureport = /opt/Axway/apigateway/certs/cert.p12
 # Use k8s secret to manage password
 $export certandkeypassword_secureport=changeit
 ```
-**secureport** is the name of the https interface.
+**secureport** is the name of the https interface **WARNING**: Do not use blank spaces. 
 
 ![secureport Interface](images/https_interface.png)
 
