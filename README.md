@@ -197,7 +197,7 @@ $export connecttourl_certandkey_sslauth=changeit
 ```
 **sslauth** is the name of  Connect to URL filter.
 
-![secureport Interface](images/https_interface.png)
+![secureport Interface](images/connect2urlsslauth.PNG)
 
 - PKCS12 - To update the https listener certificate.  There are two environment variables used to set up certificate on Listener interface
   
