@@ -249,6 +249,8 @@ $mvn clean install
 
 - Add Loadable module to running gateway using publish script or Import apim-policy-password-cert-env/src/main/resources/typeSet.xml via Policystudio using File -> Import -> Import Custom filters.
 
+(or)
+
 - Parameters of publish command
 ```bash
 Options:
