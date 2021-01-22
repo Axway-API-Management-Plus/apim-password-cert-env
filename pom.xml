@@ -48,6 +48,7 @@
             <systemPath>${apim.lib.path}/vordel-apigateway-7.7.0.20201130-5.jar</systemPath>
         </dependency>
         <dependency>
+
             <groupId>vordel-core-runtime</groupId>
             <artifactId>vordel-core-runtime</artifactId>
             <scope>system</scope>

@@ -131,6 +131,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
             } else if (key.startsWith("certandkey_")) {
                 try {
+                    Trace.info("Updating SSL interface certificate and key");
                     char[] password = System.getenv("certandkeypassword" + "_" + filterName).toCharArray();
                     String alias = importP12(entityStore, passwordValue, password);
                     Trace.info("P12 file alias name :" + alias);
@@ -138,9 +139,10 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            }else if (key.startsWith("connecttourl_certandkey_")) {
+            }else if (key.startsWith("connecttourlcertandkey_")) {
                 try {
-                    char[] password = System.getenv("connecttourl_certandkeypassword" + "_" + filterName).toCharArray();
+                    Trace.info("Updating Connect to URL client Auth certificate and key");
+                    char[] password = System.getenv("connecttourlcertandkeypassword" + "_" + filterName).toCharArray();
                     String alias = importP12(entityStore, passwordValue, password);
                     Trace.info("P12 file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
@@ -415,7 +417,7 @@ public class ExternalConfigLoader implements LoadableModule {
             return;
         }
         Entity entity = entities.get(0);
-        String fieldName = "sslusers";
+        String fieldName = "sslUsers";
         updateP12Cert(entityStore, entity, alias, fieldName);
     }
 
