@@ -4,7 +4,7 @@ Axway APIM supports environmentalization through Configuration Studio and envSet
 
 List of supported environment listed in - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
 
-The environment variables should be prefixed with "environment" for classic APIM.
+The environment variables should be prefixed with "environment" for Axway APIM solution.
 
 ## Database Environmentalization example
 - Database connection URL is environmentalized with environment variable db_url
