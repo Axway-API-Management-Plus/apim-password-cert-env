@@ -101,8 +101,10 @@ public class ExternalConfigLoader implements LoadableModule {
 
             } else if (key.startsWith("cert_")) {
                 try {
-                    X509Certificate certificate = certHelper.parseX509(passwordValue);
-                    importPublicCertificate(certificate, entityStore);
+                    List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
+                    for (X509Certificate certificate:certificates) {
+                        importPublicCertificate(certificate, entityStore);
+                    }
                 } catch (CertificateException | FileNotFoundException e) {
                     Trace.error("Unable to add the certs from Environment variable", e);
                 }
@@ -120,12 +122,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
             } else if (key.startsWith("cassandraCert")) {
                 try {
-                    X509Certificate certificate = certHelper.parseX509(passwordValue);
-                    String alias = importPublicCertificate(certificate, entityStore);
-                    if(alias != null) {
-                        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-                        updateCassandraCert(entityStore, escapedAlias);
+                    List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
+                    for (X509Certificate certificate:certificates) {
+                        String alias = importPublicCertificate(certificate, entityStore);
+                        if(alias != null) {
+                            // String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+                            //updateCassandraCert(entityStore, escapedAlias);
+                            updateCassandraCert(entityStore, alias);
+                        }
                     }
+
                 } catch (CertificateException | FileNotFoundException e) {
                     Trace.error("Unable to add Cassandra certificate from Environment variable", e);
                 }
@@ -133,9 +139,11 @@ public class ExternalConfigLoader implements LoadableModule {
                 try {
                     Trace.info("Updating SSL interface certificate and key");
                     char[] password = System.getenv("certandkeypassword" + "_" + filterName).toCharArray();
-                    String alias = importP12(entityStore, passwordValue, password);
-                    Trace.info("P12 file alias name :" + alias);
-                    configureP12(entityStore, filterName, alias);
+                    String mTLS = System.getenv("certandkeymtls" + "_" + filterName);
+
+                    PKCS12 pkcs12 = importP12(entityStore, passwordValue, password);
+                    Trace.info("P12 file alias name :" + pkcs12.getAlias());
+                    configureP12(entityStore, filterName, pkcs12,  mTLS);
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
@@ -143,7 +151,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 try {
                     Trace.info("Updating Connect to URL client Auth certificate and key");
                     char[] password = System.getenv("connecttourlcertandkeypassword" + "_" + filterName).toCharArray();
-                    String alias = importP12(entityStore, passwordValue, password);
+                    String alias = importP12(entityStore, passwordValue, password).getAlias();
                     Trace.info("P12 file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
@@ -302,17 +310,13 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void updateCassandraCert(EntityStore entityStore, String escapedAlias) {
+    private void updateCassandraCert(EntityStore entityStore, String alias) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
-            //String certPlaceHolder = "<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='" + escapedAlias + "'/></key></key>";
-            Entity certEntity = getCertEntity(entityStore, escapedAlias);
-            PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
-            // PortableESPK portableESPK = getCertEntity(entityStore, escapedAlias);
-            entity.setReferenceField("sslTrustedCerts", portableESPK);
-            entityStore.updateEntity(entity);
+            String filedName = "sslTrustedCerts";
+            updateCertEntity(entityStore, entity, alias, filedName, false);
         }
     }
 
@@ -348,7 +352,6 @@ public class ExternalConfigLoader implements LoadableModule {
             Entity certEntity = getCertEntity(entityStore, escapedAlias);
             Trace.info("Alias :" + alias + "Escaped alias :"+ escapedAlias);
 
-
             if (certEntity == null) {
                 Trace.info("Adding cert");
                 certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
@@ -363,18 +366,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 certEntity.setBinaryValue("content", certificate.getEncoded());
                 entityStore.updateEntity(certEntity);
             }
-            return escapedAlias;
+            return alias;
         } catch (CertificateException e) {
             Trace.error("Unable to add the certs from Environment variable", e);
         }
         return null;
     }
 
-    private void configureP12(EntityStore entityStore, String name, String alias) {
+    private void configureP12(EntityStore entityStore, String name,  PKCS12 pkcs12, String mTLS) {
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + name;
-        //ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        //List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Listener interface is not available");
@@ -385,7 +386,34 @@ public class ExternalConfigLoader implements LoadableModule {
         }
         Entity entity = entities.get(0);
         String fieldName = "serverCert";
-        updateP12Cert(entityStore, entity, alias, fieldName);
+        String alias = pkcs12.getAlias();
+        updateCertEntity(entityStore, entity, alias, fieldName, false);
+        Trace.info("Mutual auth flag : "+ mTLS);
+        if(mTLS != null && mTLS.equalsIgnoreCase("true")){
+            String clientAuth = entity.getStringValue("clientAuth");
+            Trace.info("Mutual auth configured with flag : "+ clientAuth);
+            if(clientAuth.equals("required") || clientAuth.equals("optional")){
+                trustRootAndIntermediateCerts(entityStore, entity, pkcs12 );
+            }
+        }
+    }
+
+    private void trustRootAndIntermediateCerts(EntityStore entityStore, Entity entity, PKCS12 pkcs12){
+        Certificate[] certificates = pkcs12.getCertificates();
+        Trace.info("Trusting additional certs for mutual auth");
+        Trace.info("Total certificates : "+ certificates.length);
+        for (int i = 1; i < certificates.length; i++) {
+            X509Certificate certificate = (X509Certificate) certificates[i];
+            Principal principal = certificate.getSubjectDN();
+            final String alias = principal.getName();
+            Trace.info("Trusting cert :"+ alias);
+            String fieldName = "caCert";
+            if( i == 1)
+                updateCertEntity(entityStore, entity, alias, fieldName, false);
+            else
+                // Trust more than one certificate for mutual auth
+                updateCertEntity(entityStore, entity, alias, fieldName, true);
+        }
     }
 
     private List<Entity> getEntities(EntityStore entityStore, String shorthandKey){
@@ -393,14 +421,33 @@ public class ExternalConfigLoader implements LoadableModule {
         return shorthandKeyFinder.getEntities(shorthandKey);
     }
 
-    private void updateP12Cert(EntityStore entityStore, Entity entity, String alias, String fieldName){
+    private void updateCertEntity(EntityStore entityStore, Entity entity, String alias, String fieldName, boolean append){
 
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
-        //Trace.info("Certificate entity set to listener interface "+ certEntity);
+       // Trace.info("Certificate entity set to listener interface "+ certEntity);
         PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
         //Trace.info("Portable : " + portableESPK);
-        entity.setReferenceField(fieldName, portableESPK);
+        if(append) {
+            Field field = entity.getField(fieldName);
+            List<Value> values = field.getValueList();
+            List<Value> cloneVales = new ArrayList<>(values);
+            for (Value value : cloneVales) {
+                PortableESPK espk = (PortableESPK) value.getRef();
+                String certStoreDistinguishedName = espk.getFieldValueOfReferencedEntity("dname");
+                Trace.info(" alias name from Gateway Cert store :" + certStoreDistinguishedName);
+                if (certStoreDistinguishedName.equals(alias)) {
+                    Trace.info("Removing existing certs" + alias);
+                    values.remove(value);
+                }
+                Trace.info("adding " + alias);
+                values.add(new Value(portableESPK));
+            }
+
+            field.setValues(values);
+        }else {
+            entity.setReferenceField(fieldName, portableESPK);
+        }
         entityStore.updateEntity(entity);
     }
 
@@ -418,7 +465,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
         Entity entity = entities.get(0);
         String fieldName = "sslUsers";
-        updateP12Cert(entityStore, entity, alias, fieldName);
+        updateCertEntity(entityStore, entity, alias, fieldName, false);
     }
 
     private Entity getCertEntity(EntityStore entityStore, String alias) {
@@ -434,7 +481,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private String importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
+    private PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
         PKCS12 pkcs12;
         File file = new File(cert);
@@ -451,7 +498,6 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
        // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
-            //certEntity.setBinaryValue();
             //Updates the existing certificate in the certstore
             Trace.info("Updating existing certificate");
             for (int i = 0; i < certificates.length; i++) {
@@ -465,15 +511,12 @@ public class ExternalConfigLoader implements LoadableModule {
                     X509Certificate certificate = (X509Certificate) certificates[i];
                     importPublicCertificate(certificate, entityStore);
                 }
-
             }
-
         } else {
             ESPK rootPK = entityStore.getRootPK();
             EntityType group = entityStore.getTypeForName("Certificates");
             Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
             certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
-
             for (int i = 0; i < certificates.length; i++) {
                 if (i == 0) {
                     Trace.info("Importing Leaf certificate");
@@ -490,9 +533,8 @@ public class ExternalConfigLoader implements LoadableModule {
                     importPublicCertificate(certificate, entityStore);
                     Trace.info("Imported root / intermediate certificate");
                 }
-
             }
         }
-        return alias;
+        return pkcs12;
     }
 }
