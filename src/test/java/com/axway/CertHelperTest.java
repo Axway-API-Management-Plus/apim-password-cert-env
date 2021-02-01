@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 public class CertHelperTest {
 
@@ -69,9 +70,25 @@ public class CertHelperTest {
 
         try {
 
-            X509Certificate certificate = certHelper.parseX509(cert);
+            X509Certificate certificate = certHelper.parseX509(cert).get(0);
             String name = certificate.getSubjectDN().getName();
             System.out.println(name);
+        } catch (CertificateException | FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testCertChain() {
+
+        try {
+
+            List<X509Certificate> certificates = certHelper.parseX509("src/test/resources/certchain.pem");
+            for (X509Certificate certificate: certificates) {
+                String name = certificate.getSubjectDN().getName();
+                System.out.println(name);
+            }
+
         } catch (CertificateException | FileNotFoundException e) {
             e.printStackTrace();
         }

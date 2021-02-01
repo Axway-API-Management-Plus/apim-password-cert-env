@@ -7,8 +7,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Base64;
-import java.util.Enumeration;
+import java.util.*;
 
 public class CertHelper {
 
@@ -63,18 +62,25 @@ public class CertHelper {
     }
 
 
-    public X509Certificate parseX509(String base64EncodedCert) throws CertificateException, FileNotFoundException {
+    public List<X509Certificate> parseX509(String base64EncodedCertOrFilePath) throws CertificateException, FileNotFoundException {
 
-        File file = new File(base64EncodedCert);
+        File file = new File(base64EncodedCertOrFilePath);
         InputStream inputStream = null;
         if(file.exists()){
             inputStream = new FileInputStream(file);
         }else {
-            inputStream = new ByteArrayInputStream(base64EncodedCert.getBytes());
+            inputStream = new ByteArrayInputStream(base64EncodedCertOrFilePath.getBytes());
         }
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-        return (X509Certificate) certificateFactory.generateCertificate(inputStream);
+        Collection<? extends Certificate> parsedCertificates = certificateFactory.generateCertificates(inputStream);
+        List<X509Certificate> certificates = new ArrayList<>();
+
+        for (Certificate certificate: parsedCertificates) {
+            certificates.add ((X509Certificate)certificate);
+        }
+        return certificates;
+      //  return (X509Certificate) certificateFactory.generateCertificate(inputStream);
     }
 
 }
