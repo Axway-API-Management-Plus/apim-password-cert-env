@@ -1,5 +1,6 @@
 package com.axway;
 
+import com.vordel.common.Config;
 import com.vordel.common.crypto.PasswordCipher;
 import com.vordel.config.ConfigContext;
 import com.vordel.config.LoadableModule;
@@ -25,8 +26,8 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private static final Logger log = LogManager.getLogger(ExternalConfigLoader.class);
     private final CertHelper certHelper = new CertHelper();
+    private final ExternalInstanceDomainCert externalInstanceDomainCert = new ExternalInstanceDomainCert();
     private PasswordCipher passwordCipher;
-
 
     @Override
     public void load(LoadableModule arg0, String arg1) {
@@ -98,7 +99,6 @@ public class ExternalConfigLoader implements LoadableModule {
                     String radiusShorthandKey = shorthandKey + "/[RadiusServer]host=" + host + ",port=" + port;
                     updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue, null);
                 }
-
             } else if (key.startsWith("cert_")) {
                 try {
                     List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
@@ -123,12 +123,17 @@ public class ExternalConfigLoader implements LoadableModule {
             } else if (key.startsWith("cassandraCert")) {
                 try {
                     List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
+                    int index = 0;
                     for (X509Certificate certificate:certificates) {
                         String alias = importPublicCertificate(certificate, entityStore);
                         if(alias != null) {
                             // String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
                             //updateCassandraCert(entityStore, escapedAlias);
-                            updateCassandraCert(entityStore, alias);
+                            if(index == 0)
+                                updateCassandraCert(entityStore, alias, false);
+                            else
+                                updateCassandraCert(entityStore, alias, true);
+                            index++;
                         }
                     }
 
@@ -140,7 +145,6 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Updating SSL interface certificate and key");
                     char[] password = System.getenv("certandkeypassword" + "_" + filterName).toCharArray();
                     String mTLS = System.getenv("certandkeymtls" + "_" + filterName);
-
                     PKCS12 pkcs12 = importP12(entityStore, passwordValue, password);
                     Trace.info("P12 file alias name :" + pkcs12.getAlias());
                     configureP12(entityStore, filterName, pkcs12,  mTLS);
@@ -157,7 +161,27 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
+            }  else if (key.startsWith("gatewaytoplogycertandkey_")) {
+            try {
+                Trace.info("Updating Gateway topology certificate");
+                char[] password = System.getenv("gatewaytoplogycertandkeypassword" + "_" + filterName).toCharArray();
+                File file = new File(passwordValue);
+                PKCS12 pkcs12;
+                if(file.exists()){
+                    pkcs12 = certHelper.parseP12(file, password);
+                }else {
+                    pkcs12 = certHelper.parseP12(passwordValue, password);
+                }
+                File gatewayConfDir = new File(Config.getVDir("VINSTDIR"), "conf");
+                File certsXml = new File(gatewayConfDir, "certs.xml");
+                String caAlias = externalInstanceDomainCert.certsFile(pkcs12, certsXml);
+                File mgmtXml = new File(gatewayConfDir, "mgmt.xml");
+                externalInstanceDomainCert.updateMgmtFile(mgmtXml, caAlias);
+
+            } catch (Exception e) {
+                Trace.error("Unable to add the p12 from Environment variable", e);
             }
+        }
         }
 
         List<Credential> credentials = parseCred(ldap, "ldap");
@@ -179,7 +203,6 @@ public class ExternalConfigLoader implements LoadableModule {
             for (Credential credential : credentials) {
                 updateSMTP(entityStore, credential);
                 updateAlertSMTP(entityStore, credential);
-
             }
         }
     }
@@ -310,13 +333,13 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void updateCassandraCert(EntityStore entityStore, String alias) {
+    private void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
             String filedName = "sslTrustedCerts";
-            updateCertEntity(entityStore, entity, alias, filedName, false);
+            updateCertEntity(entityStore, entity, alias, filedName, append);
         }
     }
 
@@ -443,7 +466,6 @@ public class ExternalConfigLoader implements LoadableModule {
                 Trace.info("adding " + alias);
                 values.add(new Value(portableESPK));
             }
-
             field.setValues(values);
         }else {
             entity.setReferenceField(fieldName, portableESPK);
