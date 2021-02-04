@@ -49,12 +49,6 @@ keyUsage = digitalSignature, dataEncipherment, keyAgreement, keyEncipherment
 extendedKeyUsage = serverAuth, clientAuth, 1.3.6.1.4.1.17998.10.1.1.2.1, 1.3.6.1.4.1.17998.10.1.1.2.2
 subjectAltName = @alt_names
 
-[node_manager_extensions]
-basicConstraints = CA:FALSE
-keyUsage = digitalSignature, dataEncipherment, keyAgreement
-extendedKeyUsage = serverAuth, clientAuth, 1.3.6.1.4.1.17998.10.1.1.2.1
-subjectAltName = @alt_names
-
 [gateway_extensions]
 basicConstraints = CA:FALSE
 keyUsage = digitalSignature, dataEncipherment, keyAgreement
@@ -83,7 +77,7 @@ openssl pkcs12 -export -in signedbyCA.crt -inkey dss-key.pem -out domain.p12 -ch
 
 - Prepare Admin Node Manager fed file
 
-    - Export Admin Node manager fed from classic installation, remove existing topology-cert and change remove / rename port name without blank space (e.g sslport)
+    - Export Admin Node manager fed from classic installation, remove existing topology-cert and rename port name - "Management HTTPS Interface". The name should not contain any blank space (e.g sslport)
 
     - Import loadable module
   Policystudio using File -> Import -> Import Custom filters -> select apim-policy-password-cert-env/src/main/resources/typeSet.xml.
@@ -159,7 +153,7 @@ command creates a file named signedbygatewayCA.crt
 openssl pkcs12 -export -in signedbygatewayCA.crt -inkey dssgateway-key.pem -out topology.p12 -chain -CAfile CA.pem -name 'topology-cert' -passout pass:
 ```
 
-- Prepare Admin Node Manager fed file
+- Prepare API Gateway fed file
 
     - Import loadable module
       Policystudio using File -> Import -> Import Custom filters -> select apim-policy-password-cert-env/src/main/resources/typeSet.xml.
