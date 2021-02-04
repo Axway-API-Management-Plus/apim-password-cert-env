@@ -21,7 +21,7 @@ public class ExternalInstanceDomainCertTest {
     public void testCerts(){
         try {
             PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("topology.p12").getFile()), "".toCharArray());
-            File certsXml = new File("src/");
+            File certsXml = new File("src/test/resources/");
             certsXml = new File(certsXml, "certs.xml");
             externalInstanceDomainCert.certsFile(pkcs12, certsXml);
         } catch (KeyStoreException e) {
@@ -39,7 +39,7 @@ public class ExternalInstanceDomainCertTest {
 
     @Test
     public void testUpdateMgmtFile(){
-        File file = new File("src/mgmt.xml");
+        File file = new File("src/test/resources/mgmt.xml");
         try {
             externalInstanceDomainCert.updateMgmtFile(file, "cn=dss");
         } catch (ParserConfigurationException e) {
