@@ -564,17 +564,34 @@ public class ExternalConfigLoader implements LoadableModule {
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]name=OAuth/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
                 "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
         // Update Quota table consistency level
-        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]name=OAuth/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[PortalConfiguration]name=Portal Config",
                 "quotaReadConsistency", readConsistencyLevel, "quotaWriteConsistency", writeConsistencyLevel);
+        //Update throttling consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[CassandraSettings]name=Cassandra Settings",
+                "throttlingReadConsistencyLevel", readConsistencyLevel, "throttlingWriteConsistencyLevel", writeConsistencyLevel);
+
+        //Update access token  consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AccessTokenStoreGroup]name=Access Token Stores/[AccessTokenPersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+
+        //Update auth code consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AuthzCodeStoreGroup]name=Authorization Code Stores/[AuthzCodePersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+        //update client access token consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[ClientAccessTokenStoreGroup]name=Client Access Token Stores/[ClientAccessTokenPersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+
     }
 
     private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel, String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
         List<Entity> kpsEntities = shorthandKeyFinder.getEntities(shorthandKey);
         if (kpsEntities != null) {
-            Trace.info("Total number of KPS Store: " + kpsEntities.size());
+            Trace.info("Total number of KPS Store: " + kpsEntities.size() + "in entity : "+ shorthandKey);
             for (Entity entity : kpsEntities) {
                 entity.setStringField(readConsistencyLevelFieldName, readConsistencyLevel);
                 entity.setStringField(writeConsistencyLevelFieldName, writeConsistencyLevel);
+                shorthandKeyFinder.getEntityStore().updateEntity(entity);
+
             }
         }
     }
