@@ -71,11 +71,6 @@ $export smtp_manager_url=smtp.axway.com
 $export httpbasic_backend=changme
 ```
 
-- Disable Cassandra SSL
-```bash
-$export cassandra_disablessl=true
-```
-
 - Disable HTTPS Interfaces
 
 ```bash
@@ -95,6 +90,20 @@ $export disablehttp_portname=true
 - Radius 
 ```bash
 ```
+### Cassandra
+
+- Disable Cassandra SSL
+```bash
+$export cassandra_disablessl=true
+```
+
+- Setup Cassandra read and write Consistency level
+
+```bash
+$export cassandraconsistency_readlevel=QUORUM
+$export cassandraconsistency_writelevel=QUORUM
+```
+Possible consistency level **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
 
 - Cassandra Certificate reference
 ```bash
@@ -119,7 +128,11 @@ PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6
 $export cassandraCert_root = /opt/Axway/apigateway/certs/cassandra.pem
 ```
 
-- x509 Cert - to trust the backend root and intermediate certificates. In order to use the feature, connect to URL filter should be enabled with "trust all Certificates in the certificate store"
+
+
+### Connect to URL
+
+- Connect to URL One way SSL  - to trust the backend root and intermediate certificates. In order to use the feature, connect to URL filter should be enabled with "trust all Certificates in the certificate store"
 
 
 ![connect to URL](images/connect_to_url.png)
@@ -178,7 +191,7 @@ s2+QnHEKNi5n6eyF81l1X3AGOMp2uUF4CfU=
 -----END CERTIFICATE-----"
 ```
 
-- Connect to URL SSL ( 2-Way SSL / Mutual SSL) Authentication 
+- Connect to URL  2-Way SSL / Mutual SSL Authentication 
   
 To update Connect to URL  SSL certificate, there are two environment variables used to set up certificate for SSL Authentication 
 
@@ -197,7 +210,9 @@ $export connecttourlcertandkey_sslauth=changeit
 ```
 **sslauth** is the name of  Connect to URL filter **WARNING**: Do not use blank spaces in Connect to URL filter name. 
 
-![secureport Interface](images/connect2urlsslauth.PNG)
+![connect_to_url client_auth](images/connect2urlsslauth.PNG)
+
+### Https Listener
 
 - PKCS12 - To update the https listener certificate.  There are two environment variables used to set up certificate on Listener interface
   

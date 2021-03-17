@@ -52,25 +52,10 @@ public class ExternalConfigLoader implements LoadableModule {
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
 
-        Map<String, String> ldap = envValues.entrySet()
-                .stream()
-                .filter(map -> map.getKey().startsWith("ldap_"))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        Map<String, String> jms = new HashMap<>();
-        for (Map.Entry<String, String> stringStringEntry : envValues.entrySet()) {
-            if (stringStringEntry.getKey().startsWith("jms_")) {
-                if (jms.put(stringStringEntry.getKey(), stringStringEntry.getValue()) != null) {
-                    throw new IllegalStateException("Duplicate key");
-                }
-            }
-        }
-
-        Map<String, String> smtp = envValues.entrySet()
-                .stream()
-                .filter(map -> map.getKey().startsWith("smtp_"))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
+        Map<String, String> ldap = groupEnvVariables(envValues,"ldap_");
+        Map<String, String> jms = groupEnvVariables(envValues,"jms_");
+        Map<String, String> smtp = groupEnvVariables(envValues,"smtp_");
+        Map<String, String> cassandraConsistency = groupEnvVariables(envValues, "cassandraconsistency_");
 
         while (keysIterator.hasNext()) {
             String key = keysIterator.next();
@@ -102,7 +87,7 @@ public class ExternalConfigLoader implements LoadableModule {
             } else if (key.startsWith("cert_")) {
                 try {
                     List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
-                    for (X509Certificate certificate:certificates) {
+                    for (X509Certificate certificate : certificates) {
                         importPublicCertificate(certificate, entityStore);
                     }
                 } catch (CertificateException | FileNotFoundException e) {
@@ -124,19 +109,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 try {
                     List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
                     int index = 0;
-                    for (X509Certificate certificate:certificates) {
+                    for (X509Certificate certificate : certificates) {
                         String alias = importPublicCertificate(certificate, entityStore);
-                        if(alias != null) {
-                            // String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-                            //updateCassandraCert(entityStore, escapedAlias);
-                            if(index == 0)
+                        if (alias != null) {
+                            if (index == 0)
                                 updateCassandraCert(entityStore, alias, false);
                             else
                                 updateCassandraCert(entityStore, alias, true);
                             index++;
                         }
                     }
-
                 } catch (CertificateException | FileNotFoundException e) {
                     Trace.error("Unable to add Cassandra certificate from Environment variable", e);
                 }
@@ -147,11 +129,11 @@ public class ExternalConfigLoader implements LoadableModule {
                     String mTLS = System.getenv("certandkeymtls" + "_" + filterName);
                     PKCS12 pkcs12 = importP12(entityStore, passwordValue, password);
                     Trace.info("P12 file alias name :" + pkcs12.getAlias());
-                    configureP12(entityStore, filterName, pkcs12,  mTLS);
+                    configureP12(entityStore, filterName, pkcs12, mTLS);
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            }else if (key.startsWith("connecttourlcertandkey_")) {
+            } else if (key.startsWith("connecttourlcertandkey_")) {
                 try {
                     Trace.info("Updating Connect to URL client Auth certificate and key");
                     char[] password = System.getenv("connecttourlcertandkeypassword" + "_" + filterName).toCharArray();
@@ -161,27 +143,26 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            }  else if (key.startsWith("gatewaytoplogycertandkey_")) {
-            try {
-                Trace.info("Updating Gateway topology certificate");
-                char[] password = System.getenv("gatewaytoplogycertandkeypassword" + "_" + filterName).toCharArray();
-                File file = new File(passwordValue);
-                PKCS12 pkcs12;
-                if(file.exists()){
-                    pkcs12 = certHelper.parseP12(file, password);
-                }else {
-                    pkcs12 = certHelper.parseP12(passwordValue, password);
+            } else if (key.startsWith("gatewaytoplogycertandkey_")) {
+                try {
+                    Trace.info("Updating Gateway topology certificate");
+                    char[] password = System.getenv("gatewaytoplogycertandkeypassword" + "_" + filterName).toCharArray();
+                    File file = new File(passwordValue);
+                    PKCS12 pkcs12;
+                    if (file.exists()) {
+                        pkcs12 = certHelper.parseP12(file, password);
+                    } else {
+                        pkcs12 = certHelper.parseP12(passwordValue, password);
+                    }
+                    File gatewayConfDir = new File(Config.getVDir("VINSTDIR"), "conf");
+                    File certsXml = new File(gatewayConfDir, "certs.xml");
+                    String caAlias = externalInstanceDomainCert.certsFile(pkcs12, certsXml);
+                    File mgmtXml = new File(gatewayConfDir, "mgmt.xml");
+                    externalInstanceDomainCert.updateMgmtFile(mgmtXml, caAlias);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-                File gatewayConfDir = new File(Config.getVDir("VINSTDIR"), "conf");
-                File certsXml = new File(gatewayConfDir, "certs.xml");
-                String caAlias = externalInstanceDomainCert.certsFile(pkcs12, certsXml);
-                File mgmtXml = new File(gatewayConfDir, "mgmt.xml");
-                externalInstanceDomainCert.updateMgmtFile(mgmtXml, caAlias);
-
-            } catch (Exception e) {
-                Trace.error("Unable to add the p12 from Environment variable", e);
             }
-        }
         }
 
         List<Credential> credentials = parseCred(ldap, "ldap");
@@ -205,10 +186,27 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateAlertSMTP(entityStore, credential);
             }
         }
+
+        if (!cassandraConsistency.isEmpty()) {
+            String readConsistencyLevel = cassandraConsistency.get("cassandraconsistency_readlevel");
+            String writeConsistencyLevel = cassandraConsistency.get("cassandraconsistency_writelevel");
+            if (readConsistencyLevel != null && writeConsistencyLevel != null) {
+                updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+            } else {
+                Trace.info("cassandraconsistency_readlevel and cassandraconsistency_writelevel environment variables are not found");
+            }
+        }
     }
 
-    private List<Credential> parseCred(Map<String, String> envMap, String connectorName) {
+    private Map<String, String>  groupEnvVariables( Map<String, String> envValues, String namePrefix){
+        return envValues.entrySet()
+                .stream()
+                .filter(map -> map.getKey().startsWith(namePrefix))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
+
+    private List<Credential> parseCred(Map<String, String> envMap, String connectorName) {
         List<Credential> credentials = new ArrayList<>();
         if (envMap != null && !envMap.isEmpty()) {
             Iterator<String> keyIterator = envMap.keySet().iterator();
@@ -373,7 +371,7 @@ public class ExternalConfigLoader implements LoadableModule {
             final String alias = principal.getName();
             String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
             Entity certEntity = getCertEntity(entityStore, escapedAlias);
-            Trace.info("Alias :" + alias + "Escaped alias :"+ escapedAlias);
+            Trace.info("Alias :" + alias + "Escaped alias :" + escapedAlias);
 
             if (certEntity == null) {
                 Trace.info("Adding cert");
@@ -396,14 +394,14 @@ public class ExternalConfigLoader implements LoadableModule {
         return null;
     }
 
-    private void configureP12(EntityStore entityStore, String name,  PKCS12 pkcs12, String mTLS) {
+    private void configureP12(EntityStore entityStore, String name, PKCS12 pkcs12, String mTLS) {
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Listener interface is not available");
             return;
-        }else if(entities.size() > 1){
+        } else if (entities.size() > 1) {
             Trace.error("Found more than one Listener interface");
             return;
         }
@@ -411,47 +409,47 @@ public class ExternalConfigLoader implements LoadableModule {
         String fieldName = "serverCert";
         String alias = pkcs12.getAlias();
         updateCertEntity(entityStore, entity, alias, fieldName, false);
-        Trace.info("Mutual auth flag : "+ mTLS);
-        if(mTLS != null && mTLS.equalsIgnoreCase("true")){
+        Trace.info("Mutual auth flag : " + mTLS);
+        if (mTLS != null && mTLS.equalsIgnoreCase("true")) {
             String clientAuth = entity.getStringValue("clientAuth");
-            Trace.info("Mutual auth configured with flag : "+ clientAuth);
-            if(clientAuth.equals("required") || clientAuth.equals("optional")){
-                trustRootAndIntermediateCerts(entityStore, entity, pkcs12 );
+            Trace.info("Mutual auth configured with flag : " + clientAuth);
+            if (clientAuth.equals("required") || clientAuth.equals("optional")) {
+                trustRootAndIntermediateCerts(entityStore, entity, pkcs12);
             }
         }
     }
 
-    private void trustRootAndIntermediateCerts(EntityStore entityStore, Entity entity, PKCS12 pkcs12){
+    private void trustRootAndIntermediateCerts(EntityStore entityStore, Entity entity, PKCS12 pkcs12) {
         Certificate[] certificates = pkcs12.getCertificates();
         Trace.info("Trusting additional certs for mutual auth");
-        Trace.info("Total certificates : "+ certificates.length);
+        Trace.info("Total certificates : " + certificates.length);
         for (int i = 1; i < certificates.length; i++) {
             X509Certificate certificate = (X509Certificate) certificates[i];
             Principal principal = certificate.getSubjectDN();
             final String alias = principal.getName();
-            Trace.info("Trusting cert :"+ alias);
+            Trace.info("Trusting cert :" + alias);
             String fieldName = "caCert";
-            if( i == 1)
+            if (i == 1) {
                 updateCertEntity(entityStore, entity, alias, fieldName, false);
-            else
+            } else
                 // Trust more than one certificate for mutual auth
                 updateCertEntity(entityStore, entity, alias, fieldName, true);
         }
     }
 
-    private List<Entity> getEntities(EntityStore entityStore, String shorthandKey){
+    private List<Entity> getEntities(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         return shorthandKeyFinder.getEntities(shorthandKey);
     }
 
-    private void updateCertEntity(EntityStore entityStore, Entity entity, String alias, String fieldName, boolean append){
+    private void updateCertEntity(EntityStore entityStore, Entity entity, String alias, String fieldName, boolean append) {
 
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
-       // Trace.info("Certificate entity set to listener interface "+ certEntity);
+        // Trace.info("Certificate entity set to listener interface "+ certEntity);
         PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
         //Trace.info("Portable : " + portableESPK);
-        if(append) {
+        if (append) {
             Field field = entity.getField(fieldName);
             List<Value> values = field.getValueList();
             List<Value> cloneVales = new ArrayList<>(values);
@@ -467,7 +465,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 values.add(new Value(portableESPK));
             }
             field.setValues(values);
-        }else {
+        } else {
             entity.setReferenceField(fieldName, portableESPK);
         }
         entityStore.updateEntity(entity);
@@ -481,7 +479,7 @@ public class ExternalConfigLoader implements LoadableModule {
         if (entities.isEmpty()) {
             Trace.error("Unable to find connect to URL filter");
             return;
-        }else if(entities.size() > 1){
+        } else if (entities.size() > 1) {
             Trace.error("Found more than one connect to URL filter");
             return;
         }
@@ -495,11 +493,7 @@ public class ExternalConfigLoader implements LoadableModule {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
         shorthandKey = "[Certificate]dname=" + alias;
-        //See if the certificate alias already exists in the entity store,
-        //if it does then update it thereby preserving any references to any HTTPS interfaces that are using this cert
         return shorthandKeyFinder.getEntity(entity.getPK(), shorthandKey);
-        //Trace.info("PK : " + certEntity.getPK());
-        //return PortableESPK.toPortableKey(entityStore, certEntity.getPK());
     }
 
 
@@ -507,9 +501,9 @@ public class ExternalConfigLoader implements LoadableModule {
 
         PKCS12 pkcs12;
         File file = new File(cert);
-        if(file.exists()){
+        if (file.exists()) {
             pkcs12 = certHelper.parseP12(file, password);
-        }else {
+        } else {
             pkcs12 = certHelper.parseP12(cert, password);
         }
         String alias = pkcs12.getAlias();
@@ -518,7 +512,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Certificate[] certificates = pkcs12.getCertificates();
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
-       // Trace.info("Certificate Entity received from entity store : "+ certEntity);
+        // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
             //Updates the existing certificate in the certstore
             Trace.info("Updating existing certificate");
@@ -559,4 +553,47 @@ public class ExternalConfigLoader implements LoadableModule {
         }
         return pkcs12;
     }
+
+    private void updateCassandraConsistencyLevel(EntityStore entityStore, String readConsistencyLevel, String writeConsistencyLevel) {
+
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        // Update KPS table consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]name=Data Sources/[KPSCassandraDataSource]name=Cassandra Storage",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+        // Update OAUTH table consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]name=OAuth/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+        // Update Quota table consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[PortalConfiguration]name=Portal Config",
+                "quotaReadConsistency", readConsistencyLevel, "quotaWriteConsistency", writeConsistencyLevel);
+        //Update throttling consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[CassandraSettings]name=Cassandra Settings",
+                "throttlingReadConsistencyLevel", readConsistencyLevel, "throttlingWriteConsistencyLevel", writeConsistencyLevel);
+
+        //Update access token  consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AccessTokenStoreGroup]name=Access Token Stores/[AccessTokenPersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+
+        //Update auth code consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AuthzCodeStoreGroup]name=Authorization Code Stores/[AuthzCodePersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+        //update client access token consistency level
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[ClientAccessTokenStoreGroup]name=Client Access Token Stores/[ClientAccessTokenPersist]**",
+                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+
+    }
+
+    private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel, String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities(shorthandKey);
+        if (kpsEntities != null) {
+            Trace.info("Total number of KPS Store: " + kpsEntities.size() + "in entity : "+ shorthandKey);
+            for (Entity entity : kpsEntities) {
+                entity.setStringField(readConsistencyLevelFieldName, readConsistencyLevel);
+                entity.setStringField(writeConsistencyLevelFieldName, writeConsistencyLevel);
+                shorthandKeyFinder.getEntityStore().updateEntity(entity);
+
+            }
+        }
+    }
+
 }

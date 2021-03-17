@@ -87,6 +87,8 @@ openssl pkcs12 -export -in signedbyCA.crt -inkey dss-key.pem -out domain.p12 -ch
 - Configure environment variable (docker-compose / kubernetes deployment)
 
 ```yaml
+ volumes:
+   - /Users/rnatarajan/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/certs/dss/p12:/opt/Axway/apigateway/groups/certs/
  # docker-compose.yaml example
  environment:
       EMT_TOPOLOGY_LOG_ENABLED: 'true'
