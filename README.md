@@ -290,7 +290,7 @@ Options:
 $cd $INSTALLDIR/apigateway/samples/scripts
 $./run.sh publish/publish.py -i /home/axway/apim-policy-password-cert-env/src/main/resources/typeSet.xml -t ExternalConfigLoader -g test -n server1
 ```
-The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new value. 
+The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new values. 
 
 Guide to Externalize EMT Admin node manager and gateway domain certificates - [domain certs](domain.md).
 
