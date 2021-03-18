@@ -558,11 +558,11 @@ public class ExternalConfigLoader implements LoadableModule {
 
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         // Update KPS table consistency level
-        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]name=Data Sources/[KPSCassandraDataSource]name=Cassandra Storage",
+        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]**/[KPSCassandraDataSource]name=Cassandra Storage",
                 "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
         // Update OAUTH table consistency level
-        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]name=OAuth/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
-                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+//        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
+//                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
         // Update Quota table consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[PortalConfiguration]name=Portal Config",
                 "quotaReadConsistency", readConsistencyLevel, "quotaWriteConsistency", writeConsistencyLevel);
@@ -586,11 +586,17 @@ public class ExternalConfigLoader implements LoadableModule {
     private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel, String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
         List<Entity> kpsEntities = shorthandKeyFinder.getEntities(shorthandKey);
         if (kpsEntities != null) {
-            Trace.info("Total number of KPS Store: " + kpsEntities.size() + "in entity : "+ shorthandKey);
+            Trace.info("Total number of KPS Store: " + kpsEntities.size() + " in entity : "+ shorthandKey);
+            EntityStore entityStore = shorthandKeyFinder.getEntityStore();
             for (Entity entity : kpsEntities) {
+//                Trace.info(entity.toString());
+//                Trace.info("Read "+ entity.getStringValue(readConsistencyLevelFieldName));
+//                Trace.info("Write "+ entity.getStringValue(readConsistencyLevelFieldName));
                 entity.setStringField(readConsistencyLevelFieldName, readConsistencyLevel);
                 entity.setStringField(writeConsistencyLevelFieldName, writeConsistencyLevel);
-                shorthandKeyFinder.getEntityStore().updateEntity(entity);
+                entityStore.updateEntity(entity);
+//                Trace.info("Update Read "+ entity.getStringValue(readConsistencyLevelFieldName));
+//                Trace.info("Update Write "+ entity.getStringValue(readConsistencyLevelFieldName));
 
             }
         }
