@@ -103,7 +103,7 @@ $export cassandra_disablessl=true
 $export cassandraconsistency_readlevel=QUORUM
 $export cassandraconsistency_writelevel=QUORUM
 ```
-Possible consistency level **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
+Possible consistency level values are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
 
 - Cassandra Certificate reference
 ```bash
@@ -263,8 +263,6 @@ $mvn clean install
 - Copy the apim-env-module-x.x.jar from project target folder to gateways instance folder $INSTALLDIR/apigateway/groups/{groupname}/{instancename}/ext/lib
 
 - Add Loadable module to running gateway using publish script or Import apim-policy-password-cert-env/src/main/resources/typeSet.xml via Policystudio using File -> Import -> Import Custom filters.
-
-(or)
 
 - Parameters of publish command
 ```bash
