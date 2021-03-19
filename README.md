@@ -129,7 +129,9 @@ $export cassandra_disablessl=true
 $export cassandraconsistency_readlevel=QUORUM
 $export cassandraconsistency_writelevel=QUORUM
 ```
-Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
+
+Possible consistency level values are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL**
+
 
 - Cassandra Certificate reference
 ```bash
@@ -288,8 +290,6 @@ $mvn clean install
 
 - Add Loadable module to running gateway using publish script or Import apim-policy-password-cert-env/src/main/resources/typeSet.xml via Policystudio using File -> Import -> Import Custom filters.
 
-(or)
-
 - Parameters of publish command
 ```bash
 Options:
@@ -316,7 +316,7 @@ Options:
 $cd $INSTALLDIR/apigateway/samples/scripts
 $./run.sh publish/publish.py -i /home/axway/apim-policy-password-cert-env/src/main/resources/typeSet.xml -t ExternalConfigLoader -g test -n server1
 ```
-The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new value. 
+The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new values. 
 
 Guide to Externalize EMT Admin node manager and gateway domain certificates - [domain certs](domain.md).
 
