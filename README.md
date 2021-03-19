@@ -4,9 +4,9 @@ Axway APIM supports environmentalization through Configuration Studio and envSet
 
 List of supported environment listed in - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
 
-The environment variables should be prefixed with "environment" for classic APIM.
+The environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the places. 
 
-## Database Environmentalization example
+## Database Environmentalization example with **environment** prefix. 
 - Database connection URL is environmentalized with environment variable db_url
 
 ![Database Connection](images/db.png)
@@ -16,21 +16,47 @@ The environment variables should be prefixed with "environment" for classic APIM
 #### Classic APIM  example
 ```bash
 $export evironment.db.password=xyz123
+$export evironment.db.username=root
+$export evironment.evironment.db_url=changme
 ```
 
 #### Container Example
 ```yaml
 env:  
       
-        - name: db_url
+        - name: evironment.db_url
           value: jdbc:mysql://mysql:3306/Axway
-        - name: db_axway_username
+        - name: evironment.db.username
           value: root
-        - name: db_axway_password
+        - name: evironment.db.password
           value: changeme
 
 ```
 
+Following fields  does not support **environment** prefix which are handled by this project.
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|ldap_connectionname_password|Configure LDAP Server|Enables environmentalization of **Password** field **connectionname** - Name used in Configure LDAP server and it should not contain blank spaces [Refer](#example)|
+|ldap_connectionname_username|Configure LDAP Server|Enables environmentalization of **Username** field [Refer](#example)|
+|ldap_connectionname_url|Configure LDAP Server|Enable environmentalization of **Provider URL** field [Refer](#example)|
+|jms_servicename_password|JMS Service|Enables environmentalization of **Password** field|
+|jms_servicename_username|JMS Service|Enables environmentalization of **Username** field|
+|jms_servicename_url|JMS Service|Enables environmentalization of **Provider URL** field|
+|smtp_servername_password|SMTP Server|Enables environmentalization of **Password** field|
+|smtp_servername_username|SMTP Server|Enables environmentalization of **Username** field|
+|smtp_servername_url|SMTP Server|Enables environmentalization of **SMTP Server Hostname** field|
+|httpbasic_profilename_password|Client Authentication - Http Basic|Enables environmentalization of **Password** field|
+|disablehttps_portname|Client Authentication - Http Basic|Disables HTTPS Listener Interface, possible values true and false|
+|disablehttp_portname|Client Authentication - Http Basic|Disables HTTP Listener Interface, possible values true and false|
+|cassandra_disablessl|Cassandra Connection|Disables Cassandra SSL connection, possible values true and false [Refer][#cassandra]|
+|cassandraconsistency_readlevel| Cassandra Read Consistency level | Updates cassandra read consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
+|cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
+|cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer][#cassandra]|
+|cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
+|connecttourl_certandkey_name|Connect to URL| Enables environmentalization of Mutual Authentication "name" refers to connect to url filter name [Refer](#connect-to-url) |
+|certandkey_httpsportname, certandkeypassword_httpsportname | HTTPS Listener | Enables environmentalization of https listener certificate [Refer](#https-listener)
+### Example
 LDAP Connections, JMS, SMTP does not support environment variables. This project supports additional environment variable using custom Loadable module. 
 
 For example  LDAP environment variable follows a format **ldap_axway_username**
@@ -103,7 +129,7 @@ $export cassandra_disablessl=true
 $export cassandraconsistency_readlevel=QUORUM
 $export cassandraconsistency_writelevel=QUORUM
 ```
-Possible consistency level **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
+Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE, ALL**
 
 - Cassandra Certificate reference
 ```bash
@@ -166,8 +192,6 @@ $export cert_domain = /opt/Axway/apigateway/certs/cert.pem
 Container Example
 ```yaml
 env:
-        - name: EMT_ANM_HOSTS
-          value: anm-int:8090
         - name: cert_domain
           value: "-----BEGIN CERTIFICATE-----
 MIIDRjCCAi6gAwIBAgIGAW5HwjW8MA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMM
