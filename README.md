@@ -2,9 +2,17 @@
 
 Axway APIM supports environmentalization through Configuration Studio and envSettings.props file, it does partially support environment variables. 
 
-List of supported environment listed in - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
+Main objective of the project is to support environmentalization for EMT ( externally managed topology ) to reuse the container in upstream environments ( QA, Production, etc..).  The same approach could be used for classic deployment as well. 
 
-The environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the places. 
+List of supported environment listed in EMT ( externally managed topology ) - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
+
+Environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the filters and connections, [ Refer  database connection environment prefix Usage](#database-environmentalization-example-with-prefix). 
+
+## Advantages of using environment variables
+
+- Securly store credentilas (password and certificate) using Kubernetes secrets. 
+- Adhere to The Twelve-Factor App rule **Store config in the environment** - https://12factor.net/config
+
 
 ## Database Environmentalization example with **environment** prefix. 
 - Database connection URL is environmentalized with environment variable db_url
@@ -13,27 +21,38 @@ The environment variables should be prefixed with **environment** for  APIM. The
 
 - Database password should use the option Wildcard Password for environmentalization 
 
-#### Classic APIM  example
+#### Environmentalization Classic APIM  example
+** Remove "environment" prfix when referening environment variable **
+
 ```bash
-$export evironment.db.password=xyz123
-$export evironment.db.username=root
-$export evironment.evironment.db_url=changme
+$export db.password=xyz123
+$export db.username=root
+$export evironment.db_url=changme
 ```
 
-#### Container Example
+#### Environmentalization Container Example
 ```yaml
+## Kubernetes manifest  
 env:  
       
-        - name: evironment.db_url
+        - name: db_url
           value: jdbc:mysql://mysql:3306/Axway
-        - name: evironment.db.username
+        - name: db.username
           value: root
-        - name: evironment.db.password
+        - name: db.password
           value: changeme
 
+
+## docker-compose.yaml
+environment:
+      EMT_ANM_HOSTS: nodemgr:8090
+      db_url: jdbc:mysql://mysql:3306/Axway
+      db.username: root
+      db.password: changme
+     
 ```
 
-Following fields  does not support **environment** prefix which are handled by this project.
+## Following fields  does not support **environment** prefix which are handled by this project.
 
 |environment variable Name | Filter / Connection  Name | Description|
 --- | --- | ---
@@ -56,8 +75,10 @@ Following fields  does not support **environment** prefix which are handled by t
 |cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
 |connecttourl_certandkey_name|Connect to URL| Enables environmentalization of Mutual Authentication "name" refers to connect to url filter name [Refer](#connect-to-url) |
 |certandkey_httpsportname, certandkeypassword_httpsportname | HTTPS Listener | Enables environmentalization of https listener certificate [Refer](#https-listener)
+
 ### Example
-LDAP Connections, JMS, SMTP does not support environment variables. This project supports additional environment variable using custom Loadable module. 
+
+LDAP Connections, JMS, SMTP does not support environment variables. 
 
 For example  LDAP environment variable follows a format **ldap_axway_username**
 
@@ -259,8 +280,12 @@ $export certandkeypassword_secureport=changeit
 
 ![secureport Interface](images/https_interface.png)
 
+## Implemenation Details
 
-## Build the project
+This project uses **Loadable module** feature to support environmentalization [Refer Java interfaces for extending API Gateway for more information](https://docs.axway.com/bundle/axway-open-docs/page/docs/apigtw_devguide/java_extend_gateway/index.html). 
+
+
+### Build the project
 
 - Edit the pom.xml system property and jar version
 
@@ -279,16 +304,34 @@ Check each dependency and change the jar version: For example the version of jar
     </dependency>
 ```
 
-- Build with maven
+- Create jar file using maven
 ```bash
 $mvn clean install
 ```
 
-## Add Loadable Module to API Gateway 
+### Add Loadable Module to EMT Container
 
-- Copy the apim-env-module-x.x.jar from project target folder to gateways instance folder $INSTALLDIR/apigateway/groups/{groupname}/{instancename}/ext/lib
+- Import Loadable Module
+      Open Policystudio, Navigate to menu File -> Import -> Import Custom filters, select apim-policy-password-cert-env/src/main/resources/typeSet.xml. It will add Loadable module to entity store. 
+   
+- Export fed file ( e.g container_env.fed) to build container
+ 
+- Build a container merge directory ( **--merge-dir** ) option 
+      - The merge directory must be called apigateway and must have the same directory structure as in an API Gateway installation.
+      - Copy the JAR file to a new directory /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway/ext/lib/ and specify /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway to the --merge-dir option.
+```bash
+./build_gw_image.py --license=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/licenses/apim.lic --default-cert --parent-image=apigw-base --merge-dir=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway --fed=container_env.fed --out-image=apim:latest
+```
+- Push it to docker registry if needed. 
+
+### Add Loadable Module to classic API Gateway 
+
+
+
 
 - Add Loadable module to running gateway using publish script or Import apim-policy-password-cert-env/src/main/resources/typeSet.xml via Policystudio using File -> Import -> Import Custom filters.
+- Copy the apim-env-module-x.x.jar from project target folder to gateways instance folder $INSTALLDIR/apigateway/groups/{groupname}/{instancename}/ext/lib
+
 
 - Parameters of publish command
 ```bash
@@ -317,6 +360,8 @@ $cd $INSTALLDIR/apigateway/samples/scripts
 $./run.sh publish/publish.py -i /home/axway/apim-policy-password-cert-env/src/main/resources/typeSet.xml -t ExternalConfigLoader -g test -n server1
 ```
 The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new values. 
+
+## Externalize EMT domain certficates
 
 Guide to Externalize EMT Admin node manager and gateway domain certificates - [domain certs](domain.md).
 
