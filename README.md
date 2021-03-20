@@ -320,6 +320,7 @@ $mvn clean install
 
       - The merge directory must be called apigateway and must have the same directory structure as in an API Gateway installation.
       - Copy the JAR file to a new directory /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway/ext/lib/ and specify /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway to the --merge-dir option.
+      
 ```bash
 ./build_gw_image.py --license=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/licenses/apim.lic --default-cert --parent-image=apigw-base --merge-dir=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway --fed=container_env.fed --out-image=apim:latest
 ```
