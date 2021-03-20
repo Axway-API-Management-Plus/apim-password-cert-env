@@ -6,7 +6,7 @@ Main objective of the project is to support environmentalization for EMT ( exter
 
 List of supported environment listed in EMT ( externally managed topology ) - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
 
-Environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the filters and connections, [ Refer  database connection environment prefix Usage](#database-environmentalization-example-with-prefix). 
+Environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the filters and connections, [ Refer  database connection environment prefix Usage](#database-environmentalization-example-with-environment-prefix). 
 
 ## Advantages of using environment variables
 
@@ -317,6 +317,7 @@ $mvn clean install
 - Export fed file ( e.g container_env.fed) to build container
  
 - Build a container merge directory ( **--merge-dir** ) option 
+
       - The merge directory must be called apigateway and must have the same directory structure as in an API Gateway installation.
       - Copy the JAR file to a new directory /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway/ext/lib/ and specify /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway to the --merge-dir option.
 ```bash
