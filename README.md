@@ -92,8 +92,6 @@ For example  LDAP environment variable follows a format **ldap_axway_username**
 ![LDAP Connection](images/ldap_connection.png)
 
 
-## Supported environment variables
-
 - LDAP Environment Variable
 
 ```bash
