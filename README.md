@@ -22,7 +22,7 @@ Environment variables should be prefixed with **environment** for  APIM. The **e
 - Database password should use the option Wildcard Password for environmentalization 
 
 #### Environmentalization Classic APIM  example
-** Remove "environment" prfix when referening environment variable **
+**Remove "environment" prfix when referening environment variable**
 
 ```bash
 $export db.password=xyz123
