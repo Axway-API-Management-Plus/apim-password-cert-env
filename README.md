@@ -68,7 +68,7 @@ environment:
 |httpbasic_profilename_password|Client Authentication - Http Basic|Enables environmentalization of **Password** field|
 |disablehttps_portname|Client Authentication - Http Basic|Disables HTTPS Listener Interface, possible values true and false|
 |disablehttp_portname|Client Authentication - Http Basic|Disables HTTP Listener Interface, possible values true and false|
-|cassandra_disablessl|Cassandra Connection|Disables Cassandra SSL connection, possible values true and false [Refer][#cassandra]|
+|cassandra_disablessl|Cassandra Connection|Disables Cassandra SSL connection, possible values true and false [Refer](#cassandra)|
 |cassandraconsistency_readlevel| Cassandra Read Consistency level | Updates cassandra read consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
 |cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
 |cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer][#cassandra]|
