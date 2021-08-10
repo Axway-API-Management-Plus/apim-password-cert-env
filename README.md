@@ -62,6 +62,9 @@ environment:
 |jms_servicename_password|JMS Service|Enables environmentalization of **Password** field|
 |jms_servicename_username|JMS Service|Enables environmentalization of **Username** field|
 |jms_servicename_url|JMS Service|Enables environmentalization of **Provider URL** field|
+|smtp_manager_password|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Password** field|
+|smtp_manager_username|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Username** field|
+|smtp_manager_url|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Hostname** field|
 |smtp_servername_password|SMTP Server|Enables environmentalization of **Password** field|
 |smtp_servername_username|SMTP Server|Enables environmentalization of **Username** field|
 |smtp_servername_url|SMTP Server|Enables environmentalization of **SMTP Server Hostname** field|
@@ -105,12 +108,19 @@ $export jms_axway_username=axway
 $export jms_axway_password=axway
 $export jms_axway_url=ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617
 ```
-- SMTP API manager Environment variable - updates SMTP server and alert configurations
+- SMTP Server API manager Environment variable - updates SMTP server and alert configurations
 ```bash
 $export smtp_manager_username=rnatarajan
 $export smtp_manager_password=changeme
 $export smtp_manager_url=smtp.axway.com
 ```
+- SMTP Server Environment variable - updates SMTP server and alert configurations
+```bash
+$export smtp_smtpserver_username=rnatarajan
+$export smtp_smtpserver_password=changeme
+$export smtp_smtpserver_url=smtp.axway.com
+```
+
 - HTTP Basic
 ```bash
 $export httpbasic_backend=changme
