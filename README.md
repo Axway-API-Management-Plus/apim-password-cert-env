@@ -343,34 +343,6 @@ $mvn clean install
 - Copy the apim-env-module-x.x.jar from project target folder to gateways instance folder $INSTALLDIR/apigateway/groups/{groupname}/{instancename}/ext/lib
 
 
-- Parameters of publish command
-```bash
-Options:
-  -h, --help            show this help message and exit
-  -g GROUP, --group=GROUP
-                        API Server Group
-  -n SERVICE, --service=SERVICE
-                        API Server
-  -u USER, --username=USER
-                        Username
-  -p PASS, --password=PASS
-                        Password
-  -d URL, --url=URL     Traffic monitor URL for API
-  -i TSLOC, --typeset=TSLOC
-                        TypeSet file location
-  -s STORETYPE, --storetype=STORETYPE
-                        Store type
-  -t TYPENAME, --entitytype=TYPENAME
-                        Entity type name
-```
-- Example command 
-
-```bash
-$cd $INSTALLDIR/apigateway/samples/scripts
-$./run.sh publish/publish.py -i /home/axway/apim-policy-password-cert-env/src/main/resources/typeSet.xml -t ExternalConfigLoader -g test -n server1
-```
-The above script connects to local Node manager and deploys the new LoadableModule. If  Node manager is running on some other machine, add url. Also, the username and password is hardcoded to default values, use the username and password parameters to provide new values. 
-
 ## Externalize EMT domain certficates
 
 Guide to Externalize EMT Admin node manager and gateway domain certificates - [domain certs](domain.md).
