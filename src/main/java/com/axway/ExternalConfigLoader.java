@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -140,6 +141,40 @@ public class ExternalConfigLoader implements LoadableModule {
                     String alias = importP12(entityStore, passwordValue, password).getAlias();
                     Trace.info("P12 file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the p12 from Environment variable", e);
+                }
+            } else if (key.startsWith("listenercert_")) {
+                try {
+                    Trace.info("Updating SSL interface certificate, CA and key");
+                    String pemKey = System.getenv("listenerkey" + "_" + filterName);
+                    String caCert = System.getenv("listenercacert" + "_" + filterName);
+                    String mTLS = System.getenv("listenermtls" + "_" + filterName);
+                    PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey);
+                    Trace.info("Pem file alias name :" + pkcs12.getAlias());
+                    configureP12(entityStore, filterName, pkcs12, mTLS);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the pem key, ca and certificate from Environment variable", e);
+                }
+            } else if (key.startsWith("connecttourlcert_")) {
+                try {
+                    Trace.info("Updating Connect to URL client Auth certificate and key");
+                    String pemKey = System.getenv("connecttourlkey" + "_" + filterName);
+                    String caCert = System.getenv("connecttourlcacert" + "_" + filterName);
+                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey).getAlias();
+                    Trace.info("Pem file alias name :" + alias);
+                    connectToURLConfigureP12(entityStore, filterName, alias);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the pem key, ca and certificate from Environment variable", e);
+                }
+            } else if (key.startsWith("jwtsigncert_")) {
+                try {
+                    Trace.info("Updating JWT Sign -   Signing key");
+                    String pemKey = System.getenv("jwtsignkey" + "_" + filterName);
+                    String caCert = System.getenv("jwtsigncacert" + "_" + filterName);
+                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey).getAlias();
+                    Trace.info("Pem file alias name :" + alias);
+                    jwtSignConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
@@ -349,8 +384,8 @@ public class ExternalConfigLoader implements LoadableModule {
         if (port != null) {
             try {
                 entity.setIntegerField("port", Integer.parseInt(port));
-            }catch (NumberFormatException e){
-                Trace.error("Invalid SMTP port number :"+port);
+            } catch (NumberFormatException e) {
+                Trace.error("Invalid SMTP port number :" + port);
             }
         }
     }
@@ -498,18 +533,30 @@ public class ExternalConfigLoader implements LoadableModule {
     private void connectToURLConfigureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
-        //ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Unable to find connect to URL filter");
             return;
-        } else if (entities.size() > 1) {
-            Trace.error("Found more than one connect to URL filter");
+        }
+        String fieldName = "sslUsers";
+        for (Entity entity : entities) {
+            updateCertEntity(entityStore, entity, alias, fieldName, false);
+        }
+    }
+
+    private void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
+
+        String shorthandKey = "/[FilterCircuit]**/[JWTSignFilter]name=" + name;
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
+        if (entities.isEmpty()) {
+            Trace.error("Unable to find JWT Sign filter");
             return;
         }
-        Entity entity = entities.get(0);
-        String fieldName = "sslUsers";
-        updateCertEntity(entityStore, entity, alias, fieldName, false);
+        String fieldName = "privateKeyAlias";
+        for (Entity entity : entities) {
+            updateCertEntity(entityStore, entity, alias, fieldName, false);
+        }
+
     }
 
     private Entity getCertEntity(EntityStore entityStore, String alias) {
@@ -575,6 +622,66 @@ public class ExternalConfigLoader implements LoadableModule {
                 }
             }
         }
+        return pkcs12;
+    }
+
+
+    private PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key) throws Exception {
+
+        PKCS12 pkcs12 = new PKCS12();
+        List<X509Certificate> caCerts = new ArrayList<>();
+        if (ca != null) {
+            caCerts = certHelper.parseX509(ca);
+        }
+        X509Certificate certObj = certHelper.parseX509(cert).get(0);
+        String alias = certObj.getSubjectDN().getName();
+        if (alias.equals("")) {
+            alias = certObj.getSerialNumber().toString();
+        }
+        PrivateKey privateKey = certHelper.parsePrivateKey(key);
+        Trace.info("Certificate alias name : " + alias);
+        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+        Entity certEntity = getCertEntity(entityStore, escapedAlias);
+        Trace.info("Escaped Certificate alias name : " + escapedAlias);
+        // Trace.info("Certificate Entity received from entity store : "+ certEntity);
+        if (certEntity != null) {
+            //Updates the existing certificate in the certstore
+            Trace.info("Updating existing certificate");
+            certEntity.setBinaryValue("content", certObj.getEncoded());
+            String keyStr = Base64.getEncoder().encodeToString(privateKey.getEncoded());
+            certEntity.setStringField("key", keyStr);
+            entityStore.updateEntity(certEntity);
+            //handle CA Certificate chain
+            for (X509Certificate x509Certificate : caCerts) {
+                importPublicCertificate(x509Certificate, entityStore);
+            }
+        } else {
+            ESPK rootPK = entityStore.getRootPK();
+            EntityType group = entityStore.getTypeForName("Certificates");
+            Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
+            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
+            Trace.info("Importing Leaf certificate");
+            certEntity.setStringField("dname", alias);
+            certEntity.setBinaryValue("content", certObj.getEncoded());
+            String keyStr = Base64.getEncoder().encodeToString(privateKey.getEncoded());
+            certEntity.setStringField("key", keyStr);
+            entityStore.addEntity(groups.iterator().next(), certEntity);
+            Trace.info("Leaf certificate imported");
+            //handle CA Certificate chain
+            for (X509Certificate x509Certificate : caCerts) {
+                Trace.info("Importing certificate root / intermediate");
+                importPublicCertificate(x509Certificate, entityStore);
+                Trace.info("Imported root / intermediate certificate");
+            }
+            //handle CA Certificate chain
+        }
+        pkcs12.setAlias(alias);
+        pkcs12.setPrivateKey(privateKey);
+        List<Certificate> certificates = new ArrayList<>();
+        certificates.add(certObj);
+        certificates.addAll(caCerts);
+        Certificate[] certificatesArray = new Certificate[certificates.size()];
+        pkcs12.setCertificates(certificates.toArray(certificatesArray));
         return pkcs12;
     }
 
