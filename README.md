@@ -66,12 +66,12 @@ environment:
 |smtp_manager_username|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Username** field|
 |smtp_manager_url|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Hostname** field|
 |smtp_manager_port|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Port** field|
-|smtp_manager_connectionType|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Connection Connection Security** field, possible values ** NONE, SSL, TLS**, default value **NONE** |
+|smtp_manager_connectionType|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Connection Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE** |
 |smtp_servername_password|SMTP Server|Enables environmentalization of **Password** field|
 |smtp_servername_username|SMTP Server|Enables environmentalization of **Username** field|
 |smtp_servername_url|SMTP Server|Enables environmentalization of **SMTP Server Hostname** field|
 |smtp_servername_port|SMTP Server|Enables environmentalization of **SMTP Server Port** field|
-|smtp_servername_connectionType|SMTP Server|Enables environmentalization of **SMTP Server Connection Security** field, possible values ** NONE, SSL, TLS**, default value **NONE** |
+|smtp_servername_connectionType|SMTP Server|Enables environmentalization of **SMTP Server Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE** |
 |httpbasic_profilename_password|Client Authentication - Http Basic|Enables environmentalization of **Password** field|
 |disablehttps_portname|Client Authentication - Http Basic|Disables HTTPS Listener Interface, possible values true and false|
 |disablehttp_portname|Client Authentication - Http Basic|Disables HTTP Listener Interface, possible values true and false|
