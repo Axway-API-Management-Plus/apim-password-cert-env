@@ -52,9 +52,9 @@ public class ExternalConfigLoader implements LoadableModule {
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
 
-        Map<String, String> ldap = groupEnvVariables(envValues,"ldap_");
-        Map<String, String> jms = groupEnvVariables(envValues,"jms_");
-        Map<String, String> smtp = groupEnvVariables(envValues,"smtp_");
+        Map<String, String> ldap = groupEnvVariables(envValues, "ldap_");
+        Map<String, String> jms = groupEnvVariables(envValues, "jms_");
+        Map<String, String> smtp = groupEnvVariables(envValues, "smtp_");
         Map<String, String> cassandraConsistency = groupEnvVariables(envValues, "cassandraconsistency_");
 
         while (keysIterator.hasNext()) {
@@ -198,7 +198,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private Map<String, String>  groupEnvVariables( Map<String, String> envValues, String namePrefix){
+    private Map<String, String> groupEnvVariables(Map<String, String> envValues, String namePrefix) {
         return envValues.entrySet()
                 .stream()
                 .filter(map -> map.getKey().startsWith(namePrefix))
@@ -314,7 +314,7 @@ public class ExternalConfigLoader implements LoadableModule {
         if (host != null) {
             entity.setStringField("smtpServer", host);
         }
-        updateMailConnectionType(entity, credential.getFilterName());
+        updateMailConnectionTypeAndPort(entity, credential.getFilterName());
         entityStore.updateEntity(entity);
     }
 
@@ -329,11 +329,12 @@ public class ExternalConfigLoader implements LoadableModule {
             if (host != null) {
                 entity.setStringField("smtp", host);
             }
-            updateMailConnectionType(entity, credential.getFilterName());
+            updateMailConnectionTypeAndPort(entity, credential.getFilterName());
             entityStore.updateEntity(entity);
         }
     }
-    private void updateMailConnectionType(Entity entity, String filterName) {
+
+    private void updateMailConnectionTypeAndPort(Entity entity, String filterName) {
         String connectionType = System.getenv("smtp_" + filterName + "_connectionType");
         if (connectionType != null) {
             // Possible Values NONE, SSL TLS
@@ -341,6 +342,15 @@ public class ExternalConfigLoader implements LoadableModule {
                 entity.setStringField("connectionType", connectionType);
             } else {
                 Trace.error("Invalid connection type : " + connectionType);
+            }
+        }
+
+        String port = System.getenv("smtp_" + filterName + "_port");
+        if (port != null) {
+            try {
+                entity.setIntegerField("port", Integer.parseInt(port));
+            }catch (NumberFormatException e){
+                Trace.error("Invalid SMTP port number :"+port);
             }
         }
     }
@@ -600,7 +610,7 @@ public class ExternalConfigLoader implements LoadableModule {
     private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel, String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
         List<Entity> kpsEntities = shorthandKeyFinder.getEntities(shorthandKey);
         if (kpsEntities != null) {
-            Trace.info("Total number of KPS Store: " + kpsEntities.size() + " in entity : "+ shorthandKey);
+            Trace.info("Total number of KPS Store: " + kpsEntities.size() + " in entity : " + shorthandKey);
             EntityStore entityStore = shorthandKeyFinder.getEntityStore();
             for (Entity entity : kpsEntities) {
 //                Trace.info(entity.toString());
