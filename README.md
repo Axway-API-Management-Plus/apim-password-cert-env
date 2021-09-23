@@ -65,10 +65,12 @@ environment:
 |smtp_manager_password|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Password** field|
 |smtp_manager_username|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Username** field|
 |smtp_manager_url|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Hostname** field|
+|smtp_manager_port|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Port** field|
 |smtp_manager_connectionType|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Connection Connection Security** field, possible values ** NONE, SSL, TLS**, default value **NONE** |
 |smtp_servername_password|SMTP Server|Enables environmentalization of **Password** field|
 |smtp_servername_username|SMTP Server|Enables environmentalization of **Username** field|
 |smtp_servername_url|SMTP Server|Enables environmentalization of **SMTP Server Hostname** field|
+|smtp_servername_port|SMTP Server|Enables environmentalization of **SMTP Server Port** field|
 |smtp_servername_connectionType|SMTP Server|Enables environmentalization of **SMTP Server Connection Security** field, possible values ** NONE, SSL, TLS**, default value **NONE** |
 |httpbasic_profilename_password|Client Authentication - Http Basic|Enables environmentalization of **Password** field|
 |disablehttps_portname|Client Authentication - Http Basic|Disables HTTPS Listener Interface, possible values true and false|
@@ -87,9 +89,9 @@ LDAP Connections, JMS, SMTP does not support environment variables.
 
 For example  LDAP environment variable follows a format **ldap_axway_username**
 
-- The prefix "ldap" refers to database connection  - the prefix used by LoadableModule to update the appropriate entity.
-- The suffix "axway" refers to  LDAP connection in Policystudio.
-- xyz1234abc is a password of axway ldap connection.
+- Prefix "ldap" refers to LDAP connection  - the prefix used by LoadableModule to update the appropriate entity in entity store.
+- Next field "axway" refers to  LDAP connection in Policystudio.
+- Suffix "username" is a username of axway ldap connection.
 
 ![LDAP Connection](images/ldap.png)
 
@@ -115,6 +117,8 @@ $export jms_axway_url=ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-
 $export smtp_manager_username=rnatarajan
 $export smtp_manager_password=changeme
 $export smtp_manager_url=smtp.axway.com
+$export smtp_manager_port=587
+$export smtp_manager_connectionType=TLS
 ```
 - SMTP Server Environment variable - updates SMTP server and alert configurations
 ```bash
