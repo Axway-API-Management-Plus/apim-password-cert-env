@@ -309,10 +309,12 @@ public class ExternalConfigLoader implements LoadableModule {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + credential.getFilterName());
         }
         setUsernameAndPassword(credential, entity, "username");
+
         String host = credential.getUrl();
         if (host != null) {
             entity.setStringField("smtpServer", host);
         }
+        updateMailConnectionType(entity, credential.getFilterName());
         entityStore.updateEntity(entity);
     }
 
@@ -327,7 +329,19 @@ public class ExternalConfigLoader implements LoadableModule {
             if (host != null) {
                 entity.setStringField("smtp", host);
             }
+            updateMailConnectionType(entity, credential.getFilterName());
             entityStore.updateEntity(entity);
+        }
+    }
+    private void updateMailConnectionType(Entity entity, String filterName) {
+        String connectionType = System.getenv("smtp_" + filterName + "_connectionType");
+        if (connectionType != null) {
+            // Possible Values NONE, SSL TLS
+            if (MailConnectionTypes.valueOf(connectionType) != null) {
+                entity.setStringField("connectionType", connectionType);
+            } else {
+                Trace.error("Invalid connection type : " + connectionType);
+            }
         }
     }
 
@@ -601,5 +615,7 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
     }
+
+    public enum MailConnectionTypes {NONE, SSL, TLS}
 
 }
