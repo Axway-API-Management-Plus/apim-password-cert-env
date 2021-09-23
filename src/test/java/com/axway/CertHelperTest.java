@@ -8,9 +8,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CertHelperTest {
@@ -90,6 +92,32 @@ public class CertHelperTest {
             }
 
         } catch (CertificateException | FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testPrivatelyPublicAndCACert() {
+
+        try {
+            List<X509Certificate> certificates = new ArrayList<>();
+            X509Certificate caCert = certHelper.parseX509("src/test/resources/acp-ca.pem").get(0);
+            X509Certificate cert = certHelper.parseX509("src/test/resources/acp-crt.pem").get(0);
+            certificates.add(caCert);
+            certificates.add(cert);
+
+
+            for (X509Certificate certificate: certificates) {
+                String name = certificate.getSubjectDN().getName();
+                System.out.println(certificate.getSerialNumber());
+            }
+
+            PrivateKey privateKey = certHelper.parsePrivateKey("src/test/resources/acp-key.pem");
+            System.out.println(privateKey);
+
+        } catch (CertificateException | FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

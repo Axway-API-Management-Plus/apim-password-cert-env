@@ -80,8 +80,57 @@ environment:
 |cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
 |cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer][#cassandra]|
 |cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
-|connecttourl_certandkey_name, connecttourlcertandkeypassword_name|Connect to URL| Enables environmentalization of Mutual Authentication "name" refers to connect to url filter name [Refer](#connect-to-url) |
-|certandkey_httpsportname, certandkeypassword_httpsportname | HTTPS Listener | Enables environmentalization of https listener certificate [Refer](#https-listener)
+
+
+## Connect to URL Client Authentication  with p12 file
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|connecttourl_certandkey_name|Connect to URL| Enables environmentalization of Mutual Authentication "name" refers to connect to url filter name [Refer](#connect-to-url),  p12 file path or base64 encoded content |
+|connecttourlcertandkeypassword_name|Connect to URL| Password of p12 file used in connect to url filter [Refer](#connect-to-url) |
+
+## Connect to URL Client Authentication  with pem file
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|connecttourlcert_name|Connect to URL| Public certificate path or base64 encoded content |
+|connecttourlkey_name|Connect to URL| Private key of the certificate path or base64 encoded content  |
+|connecttourlcacert_name|Connect to URL| CA certificate path or baseb4 encoded content |
+
+### Example
+
+```
+#backend - Name of connect to url filter
+   export connecttourlcert_backend = /opt/Axway/apigateway/ext/conf/acp-crt.pem
+   export connecttourlkey_backend: /opt/Axway/apigateway/ext/conf/acp-key.pem
+   export connecttourlcacert_backend: /opt/Axway/apigateway/ext/conf/acp-ca.pem
+```
+## Configure HTTPS Listener Certificate and trust certificate for Mutual Auth with p12 file
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|certandkey_httpsportname| HTTPS Listener | Enables environmentalization of https listener certificate [Refer](#https-listener),  p12 file path or base64 encoded content |
+|certandkeypassword_httpsportname| HTTPS Listener | Password of p12 file used in Listener port [Refer](#https-listener) |
+|certandkeymtls_httpsportname| HTTPS Listener | Trust CA certificate / certificate provided in p12 file, possible values true, default false |
+
+
+## Configure HTTPS Listener Certificate and trust certificate for Mutual Auth with pem file
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|listenercert_httpsportname| HTTPS Listener | Public certificate path or base64 encoded content |
+|listenerkey_httpsportname| HTTPS Listener | Private key of the certificate path or base64 encoded content |
+|listenercacert_httpsportname| HTTPS Listener |  CA certificate path or baseb4 encoded content |
+|listenermtls_httpsportname| HTTPS Listener |  Trust CA certificate / certificate provided in p12 file, possible values true, default false |
+
+
+## JWT Sign Client Authentication  with pem file
+
+|environment variable Name | Filter / Connection  Name | Description|
+--- | --- | ---
+|jwtsigncert_name|Connect to URL| Public certificate path or base64 encoded content |
+|jwtsignkey_name|Connect to URL| Private key of the certificate path or base64 encoded content  |
+|jwtsigncacert_name|Connect to URL| CA certificate path or baseb4 encoded content |
 
 ### Example
 
