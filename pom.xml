@@ -6,7 +6,7 @@
 
     <groupId>com.axway</groupId>
     <artifactId>apim-env-module</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.6</version>
 
     <name>apim-env-module</name>
     <url>https://axway.com</url>
@@ -15,9 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <api.version>7.7</api.version>
-        <!--apim.lib.path>/Users/rnatarajan/AxwayProducts/apim_7_7_nov/lib</apim.lib.path-->
-        <apim.lib.path>C:\Axway\Axway77March2021\apigateway\system\lib</apim.lib.path>
+        <api.version>7.7.0.20210830-2</api.version>
     </properties>
 
     <dependencies>
@@ -30,58 +28,42 @@
         <dependency>
             <groupId>apigw-common</groupId>
             <artifactId>apigw-common</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/apigw-common-2.0.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-trace</groupId>
             <artifactId>vordel-trace</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/vordel-trace-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-apigateway</groupId>
             <artifactId>vordel-apigateway</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/vordel-apigateway-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-core-runtime</groupId>
             <artifactId>vordel-core-runtime</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/vordel-core-runtime-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>es-core</groupId>
             <artifactId>es-core</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/es-core-2.0.11.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-common</groupId>
             <artifactId>vordel-common</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/vordel-common-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-system</groupId>
             <artifactId>vordel-system</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/vordel-system-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>vordel-config</groupId>
             <artifactId>vordel-config</artifactId>
-            <scope>system</scope>
             <version>${api.version}</version>
-            <systemPath>${apim.lib.path}/plugins/vordel-config-7.7.0.20210330-6.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
