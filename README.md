@@ -350,26 +350,90 @@ This project uses **Loadable module** feature to support environmentalization [R
 
 ### Build the project
 
-- Edit the pom.xml system property and jar version
+- Open pom.xml and edit the system property **apigateway.version** based on API Gateway version.
 
-System property
+
 ```xml
-<apim.lib.path>D:\Axway\Axway-7.7.0\apigateway\system\lib</apim.lib.path>
+        <!-- API Gateway August 2021 Release version -->
+        <apigateway.version>7.7.0.20210830-2</apigateway.version>
 ```    
-Check each dependency and change the jar version: For example the version of jar apigw-common-7.7.0-4.jar might changes in each release
-```xml
-    <dependency>
-      <groupId>apigw-common</groupId>
-      <artifactId>apigw-common</artifactId>
-      <scope>system</scope>
-      <version>${api.version}</version>
-      <systemPath>${apim.lib.path}\plugins\apigw-common-7.7.0-4.jar</systemPath>
-    </dependency>
+
+As API Gateway libraires are not available on public maven repositories, insall the jare file to local maven repository (the version of jar vordel-trace-7.7.0.20210830-2.jar changes in each release).
+
+```bash
+
+ mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/apigw-common-2.0.1.jar \
+-DgroupId=apigw-common \
+-DartifactId=apigw-common \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/vordel-trace-7.7.0.20210830-2.jar \
+-DgroupId=vordel-trace \
+-DartifactId=vordel-trace \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/vordel-apigateway-7.7.0.20210830-2.jar \
+-DgroupId=vordel-apigateway \
+-DartifactId=vordel-apigateway \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/vordel-core-runtime-7.7.0.20210830-2.jar \
+-DgroupId=vordel-core-runtime \
+-DartifactId=vordel-core-runtime \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/es-core-2.1.0.jar \
+-DgroupId=es-core \
+-DartifactId=es-core \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/vordel-config-7.7.0.20210830-2.jar \
+-DgroupId=vordel-config \
+-DartifactId=vordel-config \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/vordel-common-7.7.0.20210830-2.jar \
+-DgroupId=vordel-common \
+-DartifactId=vordel-common \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/vordel-system-7.7.0.20210830-2.jar \
+-DgroupId=vordel-system \
+-DartifactId=vordel-system \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
 ```
 
 - Create jar file using maven
 ```bash
-$mvn clean install
+$mvn clean package
 ```
 
 ### Add Loadable Module to EMT Container
@@ -390,8 +454,6 @@ $mvn clean install
 - Push it to docker registry if needed.
 
 ### Add Loadable Module to classic API Gateway
-
-
 
 
 - Add Loadable module to running gateway using publish script or Import apim-policy-password-cert-env/src/main/resources/typeSet.xml via Policystudio using File -> Import -> Import Custom filters.
