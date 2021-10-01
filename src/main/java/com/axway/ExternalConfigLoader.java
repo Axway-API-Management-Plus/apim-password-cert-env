@@ -192,7 +192,9 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            }
+            }else if(key.startsWith("cassandra_password")){
+               updateCassandraPassword(entityStore, passwordValue.toCharArray());
+           }
         }
 
         Map<String, Map<String, String>> httpBasicObjs = parseCred(httpBasic);
@@ -223,7 +225,6 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
         Map<String, Map<String, String>> smtpObjs = parseCred(smtp);
-        Trace.info("SMTP :" + smtpObjs);
         if (!smtpObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : smtpObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -270,10 +271,6 @@ public class ExternalConfigLoader implements LoadableModule {
                         values.put(filterName, attributes);
                     }
                     attributes.put(attribute, value);
-                } else {
-                    envMap.remove(key);
-                    keyIterator = envMap.keySet().iterator();
-                    continue;
                 }
             }
         }
@@ -345,6 +342,10 @@ public class ExternalConfigLoader implements LoadableModule {
         } else {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName);
         }
+        if( entity == null){
+            Trace.error("Unable to locate SMTP connection : " + filterName );
+            return;
+        }
         setUsernameAndPassword(attributes, entity, "username");
 
         String host = attributes.get("url");
@@ -391,6 +392,15 @@ public class ExternalConfigLoader implements LoadableModule {
                 Trace.error("Invalid SMTP port number :" + port);
             }
         }
+    }
+
+    private void updateCassandraPassword(EntityStore entityStore, char[] password) {
+        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
+        Entity entity = getEntity(entityStore, shorthandKey);
+        String encodedPassword = Base64.getEncoder().encodeToString(String.valueOf(password).getBytes());
+        entity.setStringField("password", encodedPassword);
+        entityStore.updateEntity(entity);
+
     }
 
     private void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
@@ -535,7 +545,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private void connectToURLConfigureP12(EntityStore entityStore, String name, String alias) {
 
-        String shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
+        String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Unable to find connect to URL filter");
@@ -547,9 +557,9 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
+    private void    jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
 
-        String shorthandKey = "/[FilterCircuit]**/[JWTSignFilter]name=" + name;
+        String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTSignFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Unable to find JWT Sign filter");
