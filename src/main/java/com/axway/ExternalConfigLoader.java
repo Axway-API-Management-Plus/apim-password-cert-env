@@ -81,14 +81,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue, null);
                 }
             } else if (key.startsWith("cert_")) {
-                try {
-                    List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
-                    for (X509Certificate certificate : certificates) {
-                        importPublicCertificate(certificate, entityStore);
-                    }
-                } catch (CertificateException | FileNotFoundException e) {
-                    Trace.error("Unable to add the certs from Environment variable", e);
-                }
+               importCertificates(entityStore, passwordValue);
             } else if (key.startsWith("disablehttps_")) {
                 if (passwordValue.equalsIgnoreCase("true")) {
                     disableInterface(entityStore, filterName, "SSLInterface");
@@ -173,7 +166,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            } else if (key.startsWith("gatewaytoplogycertandkey_")) {
+            } else if (key.startsWith("jwtverifycert_")) {
+               try {
+                   Trace.info("Updating JWT  verify certificate");
+                   X509Certificate certificate = certHelper.parseX509(passwordValue).get(0);
+                   String alias = importPublicCertificate(certificate, entityStore);
+                   jwtVerifyConfigureCertificate(entityStore, filterName, alias);
+               } catch (Exception e) {
+                   Trace.error("Unable to add the p12 from Environment variable", e);
+               }
+           }else if (key.startsWith("gatewaytoplogycertandkey_")) {
                 try {
                     Trace.info("Updating Gateway topology certificate");
                     char[] password = System.getenv("gatewaytoplogycertandkeypassword" + "_" + filterName).toCharArray();
@@ -241,6 +243,17 @@ public class ExternalConfigLoader implements LoadableModule {
             } else {
                 Trace.info("cassandraconsistency_readlevel and cassandraconsistency_writelevel environment variables are not found");
             }
+        }
+    }
+
+    private void importCertificates(EntityStore entityStore, String passwordValue){
+        try {
+            List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
+            for (X509Certificate certificate : certificates) {
+                importPublicCertificate(certificate, entityStore);
+            }
+        } catch (CertificateException | FileNotFoundException e) {
+            Trace.error("Unable to add the certs from Environment variable", e);
         }
     }
 
@@ -413,6 +426,8 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
+
+
     private void disableCassandraSSL(EntityStore entityStore) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
@@ -557,7 +572,23 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void    jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
+    private void jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
+
+        String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
+        if (entities.isEmpty()) {
+            Trace.error("Unable to find JWT verify filter");
+            return;
+        }
+
+        String fieldName = "publicKeyAlias";
+        for (Entity entity : entities) {
+            updateCertEntity(entityStore, entity, alias, fieldName, false);
+        }
+
+    }
+
+    private void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTSignFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
