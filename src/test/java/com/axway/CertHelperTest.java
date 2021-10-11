@@ -6,10 +6,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -87,11 +84,25 @@ public class CertHelperTest {
 
             List<X509Certificate> certificates = certHelper.parseX509("src/test/resources/certchain.pem");
             for (X509Certificate certificate: certificates) {
-                String name = certificate.getSubjectDN().getName();
-                System.out.println(name);
+                Principal dn = certificate.getSubjectDN();
+                System.out.println(dn);
+                Principal issuer = certificate.getIssuerDN();
+                if(!dn.equals(issuer)) {
+                    certificate.verify(certificates.get(0).getPublicKey());
+                    System.out.println("Certificate verified");
+                }
+                System.out.println(issuer);
             }
 
         } catch (CertificateException | FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
             e.printStackTrace();
         }
     }
@@ -140,4 +151,6 @@ public class CertHelperTest {
             e.printStackTrace();
         }
     }
+
+
 }
