@@ -79,6 +79,7 @@ environment:
 |cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
 |cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer](#cassandra)|
 |cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
+|jwtverifycert_name| JWT Verify | Enables environmentalization of certificate to verify JWT signature |
 
 
 ## Connect to URL Client Authentication  with p12 file
