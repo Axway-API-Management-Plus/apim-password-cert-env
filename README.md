@@ -360,7 +360,7 @@ This project uses **Loadable module** feature to support environmentalization [R
         <apigateway.version>7.7.0.20210830-2</apigateway.version>
 ```    
 
-As API Gateway libraires are not available on public maven repositories, insall the jare file to local maven repository (the version of jar vordel-trace-7.7.0.20210830-2.jar changes in each release).
+As API Gateway libraries are not available on public maven repositories, install the jar file to local maven repository (the version of jar vordel-trace-7.7.0.20210830-2.jar changes in each release).
 
 ```bash
 
