@@ -153,7 +153,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Pem file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
-                    Trace.error("Unable to add the pem key, ca and certificate from Environment variable", e);
+                    Trace.error("Unable to add the  key and certificate from Environment variable", e);
                 }
             } else if (key.startsWith("jwtsigncert_")) {
                 try {
@@ -164,7 +164,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Pem file alias name :" + alias);
                     jwtSignConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
-                    Trace.error("Unable to add the p12 from Environment variable", e);
+                    Trace.error("Unable to add the  key and certificate from Environment variable", e);
                 }
             } else if (key.startsWith("jwtverifycert_")) {
                try {
@@ -173,7 +173,7 @@ public class ExternalConfigLoader implements LoadableModule {
                    String alias = importPublicCertificate(certificate, entityStore);
                    jwtVerifyConfigureCertificate(entityStore, filterName, alias);
                } catch (Exception e) {
-                   Trace.error("Unable to add the p12 from Environment variable", e);
+                   Trace.error("Unable to add the certificate from Environment variable", e);
                }
            }else if (key.startsWith("gatewaytoplogycertandkey_")) {
                 try {
@@ -683,6 +683,9 @@ public class ExternalConfigLoader implements LoadableModule {
             alias = certObj.getSerialNumber().toString();
         }
         PrivateKey privateKey = certHelper.parsePrivateKey(key);
+        if( privateKey == null){
+            throw new Exception("Unable to parse a private key");
+        }
         Trace.info("Certificate alias name : " + alias);
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
