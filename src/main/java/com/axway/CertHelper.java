@@ -78,6 +78,7 @@ public class CertHelper {
             }
             PEMParser pemParser = new PEMParser(reader);
             Object pemContent = pemParser.readObject();
+            System.out.println(pemContent.getClass().getName());
             if (pemContent instanceof PEMKeyPair) {
                 PEMKeyPair pemKeyPair = (PEMKeyPair) pemContent;
                 KeyPair keyPair = jcaPEMKeyConverter.getKeyPair(pemKeyPair);

@@ -199,7 +199,7 @@ public class ExternalConfigLoader implements LoadableModule {
            }
         }
 
-        Map<String, Map<String, String>> httpBasicObjs = parseCred(httpBasic);
+        Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(httpBasic);
         if (!httpBasicObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -210,7 +210,7 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
 
-        Map<String, Map<String, String>> ldapObjs = parseCred(ldap);
+        Map<String, Map<String, String>> ldapObjs = Util.parseCred(ldap);
         if (!ldapObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -218,7 +218,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateLdap(entityStore, attributes, filterName);
             }
         }
-        Map<String, Map<String, String>> jmsObjs = parseCred(jms);
+        Map<String, Map<String, String>> jmsObjs = Util.parseCred(jms);
         if (!jmsObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : jmsObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -226,7 +226,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateJMS(entityStore, attributes, filterName);
             }
         }
-        Map<String, Map<String, String>> smtpObjs = parseCred(smtp);
+        Map<String, Map<String, String>> smtpObjs = Util.parseCred(smtp);
         if (!smtpObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : smtpObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -265,30 +265,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    public Map<String, Map<String, String>> parseCred(Map<String, String> envMap) {
 
-        Map<String, Map<String, String>> values = new HashMap<>();
-        if (envMap != null && !envMap.isEmpty()) {
-            Iterator<String> keyIterator = envMap.keySet().iterator();
-            while (keyIterator.hasNext()) {
-                String key = keyIterator.next();
-                String[] delimitedKeys = key.split("_");
-                String filterName;
-                if (delimitedKeys.length == 3) {
-                    filterName = delimitedKeys[1];
-                    String attribute = delimitedKeys[2];
-                    String value = envMap.get(key);
-                    Map<String, String> attributes = values.get(filterName);
-                    if (attributes == null) {
-                        attributes = new HashMap<>();
-                        values.put(filterName, attributes);
-                    }
-                    attributes.put(attribute, value);
-                }
-            }
-        }
-        return values;
-    }
 
     private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
             value, Object secret) {
