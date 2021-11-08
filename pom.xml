@@ -43,6 +43,68 @@
                 </plugins>
             </build>
 
+
+        </profile>
+        <profile>
+            <id>release</id>
+            <dependencies>
+                <dependency>
+                    <groupId>apigw-common</groupId>
+                    <artifactId>apigw-common</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-trace</groupId>
+                    <artifactId>vordel-trace</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-apigateway</groupId>
+                    <artifactId>vordel-apigateway</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-core-runtime</groupId>
+                    <artifactId>vordel-core-runtime</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>es-core</groupId>
+                    <artifactId>es-core</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-common</groupId>
+                    <artifactId>vordel-common</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-system</groupId>
+                    <artifactId>vordel-system</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>vordel-config</groupId>
+                    <artifactId>vordel-config</artifactId>
+                    <version>${apigateway.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.0.2</version>
+                        <configuration>
+                            <excludes>
+                                <exclude>instance.xml</exclude>
+                                <exclude>ExternalConfigLoadableModule.xml</exclude>
+                                <exclude>typeSet.xml</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 
@@ -52,46 +114,6 @@
             <artifactId>junit</artifactId>
             <version>[4.13.1,)</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>apigw-common</groupId>
-            <artifactId>apigw-common</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-trace</groupId>
-            <artifactId>vordel-trace</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-apigateway</groupId>
-            <artifactId>vordel-apigateway</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-core-runtime</groupId>
-            <artifactId>vordel-core-runtime</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>es-core</groupId>
-            <artifactId>es-core</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-common</groupId>
-            <artifactId>vordel-common</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-system</groupId>
-            <artifactId>vordel-system</artifactId>
-            <version>${apigateway.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>vordel-config</groupId>
-            <artifactId>vordel-config</artifactId>
-            <version>${apigateway.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -114,24 +136,5 @@
             <version>1.69</version>
         </dependency>
     </dependencies>
-    <build>
 
-        <plugins>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.2</version>
-                <configuration>
-                    <excludes>
-                        <exclude>instance.xml</exclude>
-                        <exclude>ExternalConfigLoadableModule.xml</exclude>
-                        <exclude>typeSet.xml</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-
-
-        </plugins>
-    </build>
 </project>
