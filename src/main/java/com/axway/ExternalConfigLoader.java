@@ -153,7 +153,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Pem file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
-                    Trace.error("Unable to add the pem key, ca and certificate from Environment variable", e);
+                    Trace.error("Unable to add the  key and certificate from Environment variable", e);
                 }
             } else if (key.startsWith("jwtsigncert_")) {
                 try {
@@ -164,7 +164,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Pem file alias name :" + alias);
                     jwtSignConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
-                    Trace.error("Unable to add the p12 from Environment variable", e);
+                    Trace.error("Unable to add the  key and certificate from Environment variable", e);
                 }
             } else if (key.startsWith("jwtverifycert_")) {
                try {
@@ -173,7 +173,7 @@ public class ExternalConfigLoader implements LoadableModule {
                    String alias = importPublicCertificate(certificate, entityStore);
                    jwtVerifyConfigureCertificate(entityStore, filterName, alias);
                } catch (Exception e) {
-                   Trace.error("Unable to add the p12 from Environment variable", e);
+                   Trace.error("Unable to add the certificate from Environment variable", e);
                }
            }else if (key.startsWith("gatewaytoplogycertandkey_")) {
                 try {
@@ -199,7 +199,7 @@ public class ExternalConfigLoader implements LoadableModule {
            }
         }
 
-        Map<String, Map<String, String>> httpBasicObjs = parseCred(httpBasic);
+        Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(httpBasic);
         if (!httpBasicObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -210,7 +210,7 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
 
-        Map<String, Map<String, String>> ldapObjs = parseCred(ldap);
+        Map<String, Map<String, String>> ldapObjs = Util.parseCred(ldap);
         if (!ldapObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -218,7 +218,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateLdap(entityStore, attributes, filterName);
             }
         }
-        Map<String, Map<String, String>> jmsObjs = parseCred(jms);
+        Map<String, Map<String, String>> jmsObjs = Util.parseCred(jms);
         if (!jmsObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : jmsObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -226,7 +226,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateJMS(entityStore, attributes, filterName);
             }
         }
-        Map<String, Map<String, String>> smtpObjs = parseCred(smtp);
+        Map<String, Map<String, String>> smtpObjs = Util.parseCred(smtp);
         if (!smtpObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : smtpObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -265,30 +265,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    public Map<String, Map<String, String>> parseCred(Map<String, String> envMap) {
 
-        Map<String, Map<String, String>> values = new HashMap<>();
-        if (envMap != null && !envMap.isEmpty()) {
-            Iterator<String> keyIterator = envMap.keySet().iterator();
-            while (keyIterator.hasNext()) {
-                String key = keyIterator.next();
-                String[] delimitedKeys = key.split("_");
-                String filterName;
-                if (delimitedKeys.length == 3) {
-                    filterName = delimitedKeys[1];
-                    String attribute = delimitedKeys[2];
-                    String value = envMap.get(key);
-                    Map<String, String> attributes = values.get(filterName);
-                    if (attributes == null) {
-                        attributes = new HashMap<>();
-                        values.put(filterName, attributes);
-                    }
-                    attributes.put(attribute, value);
-                }
-            }
-        }
-        return values;
-    }
 
     private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
             value, Object secret) {
@@ -683,6 +660,9 @@ public class ExternalConfigLoader implements LoadableModule {
             alias = certObj.getSerialNumber().toString();
         }
         PrivateKey privateKey = certHelper.parsePrivateKey(key);
+        if( privateKey == null){
+            throw new Exception("Unable to parse a private key");
+        }
         Trace.info("Certificate alias name : " + alias);
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
@@ -717,7 +697,6 @@ public class ExternalConfigLoader implements LoadableModule {
                 importPublicCertificate(x509Certificate, entityStore);
                 Trace.info("Imported root / intermediate certificate");
             }
-            //handle CA Certificate chain
         }
         pkcs12.setAlias(alias);
         pkcs12.setPrivateKey(privateKey);
@@ -735,20 +714,14 @@ public class ExternalConfigLoader implements LoadableModule {
         // Update KPS table consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]**/[KPSCassandraDataSource]name=Cassandra Storage",
                 "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
-        // Update OAUTH table consistency level
-//        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]name=DataSources/[KPSCassandraDataSource]name=Cassandra Storage",
-//                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
-        // Update Quota table consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[PortalConfiguration]name=Portal Config",
                 "quotaReadConsistency", readConsistencyLevel, "quotaWriteConsistency", writeConsistencyLevel);
         //Update throttling consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[CassandraSettings]name=Cassandra Settings",
                 "throttlingReadConsistencyLevel", readConsistencyLevel, "throttlingWriteConsistencyLevel", writeConsistencyLevel);
-
         //Update access token  consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AccessTokenStoreGroup]name=Access Token Stores/[AccessTokenPersist]**",
                 "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
-
         //Update auth code consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AuthzCodeStoreGroup]name=Authorization Code Stores/[AuthzCodePersist]**",
                 "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
@@ -764,15 +737,9 @@ public class ExternalConfigLoader implements LoadableModule {
             Trace.info("Total number of KPS Store: " + kpsEntities.size() + " in entity : " + shorthandKey);
             EntityStore entityStore = shorthandKeyFinder.getEntityStore();
             for (Entity entity : kpsEntities) {
-//                Trace.info(entity.toString());
-//                Trace.info("Read "+ entity.getStringValue(readConsistencyLevelFieldName));
-//                Trace.info("Write "+ entity.getStringValue(readConsistencyLevelFieldName));
                 entity.setStringField(readConsistencyLevelFieldName, readConsistencyLevel);
                 entity.setStringField(writeConsistencyLevelFieldName, writeConsistencyLevel);
                 entityStore.updateEntity(entity);
-//                Trace.info("Update Read "+ entity.getStringValue(readConsistencyLevelFieldName));
-//                Trace.info("Update Write "+ entity.getStringValue(readConsistencyLevelFieldName));
-
             }
         }
     }

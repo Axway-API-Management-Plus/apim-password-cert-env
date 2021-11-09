@@ -133,6 +133,32 @@ public class CertHelperTest {
         }
     }
 
+    @Test
+    public void testKeyAndCert() {
+
+        try {
+            List<X509Certificate> certificates = new ArrayList<>();
+            X509Certificate cert = certHelper.parseX509("src/test/resources/test_cert.pem").get(0);
+            certificates.add(cert);
+
+
+            for (X509Certificate certificate: certificates) {
+                String name = certificate.getSubjectDN().getName();
+                System.out.println("Serial number :"+ certificate.getSerialNumber());
+                System.out.println("DN Name :"+ name);
+
+            }
+
+            PrivateKey privateKey = certHelper.parsePrivateKey("src/test/resources/test_key.pem");
+            System.out.println(privateKey);
+
+        } catch (CertificateException | FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Test
     public void testInvalidTest(){
