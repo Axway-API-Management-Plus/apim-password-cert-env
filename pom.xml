@@ -26,19 +26,11 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
-                        <version>3.8.1</version>
-                        <configuration>
+                        <configuration combine.self="override">
                             <excludes>
-                                <exclude>com/axway/ExternalConfigLoader.java</exclude>
+                                <exclude>**/com/axway/ExternalConfigLoader.java</exclude>
                             </excludes>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>testCompile</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
