@@ -18,6 +18,7 @@ import java.util.*;
 
 public class CertHelper {
 
+
     final JcaPEMKeyConverter jcaPEMKeyConverter = new JcaPEMKeyConverter();
 
     public PKCS12 parseP12(File file, char[] password) throws KeyStoreException, NoSuchAlgorithmException, IOException, CertificateException, UnrecoverableKeyException {
@@ -122,7 +123,6 @@ public class CertHelper {
                 }
             }
         }
-        //  return (X509Certificate) certificateFactory.generateCertificate(inputStream);
     }
 
 }
