@@ -29,7 +29,7 @@
                         <version>3.8.1</version>
                         <configuration>
                             <excludes>
-                                <exclude>**/com/axway/ExternalConfigLoader.java</exclude>
+                                <exclude>com/axway/ExternalConfigLoader.java</exclude>
                             </excludes>
                         </configuration>
                         <executions>
