@@ -15,7 +15,7 @@ Environment variables should be prefixed with **environment** for  APIM. The **e
 
 
 ## Database Environmentalization example with **environment** prefix.
-- Database connection URL is environmentalized with environment variable db_url
+- Database connection URL is environmentalized with environment variable db_url ( **environment** prefix should be used to reference environment variable)
 
 ![Database Connection](images/db.png)
 
