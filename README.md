@@ -6,7 +6,7 @@ Main objective of the project is to support environmentalization for EMT ( exter
 
 List of supported environment listed in EMT ( externally managed topology ) - [APIM Runtime Parameters](https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_installation/apigw_containers/container_env_variables/index.html)
 
-Environment variables should be prefixed with **environment** for  APIM. The **environment** prefix could be used in most of the filters and connections, [ Refer  database connection environment prefix Usage](#database-environmentalization-example-with-environment-prefix).
+Environment variables should be prefixed with **environment** for  APIM to reference enivironment variable. The **environment** prefix could be used in most of the filters and connections, [ Refer  database connection environment prefix Usage](#database-environmentalization-example-with-environment-prefix).
 
 ## Advantages of using environment variables
 
