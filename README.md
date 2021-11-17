@@ -25,9 +25,9 @@ Environment variables should be prefixed with **environment** for  APIM. The **e
 **Remove "environment" prefix when referening environment variable**
 
 ```bash
-$export db.password=xyz123
+$export db.password=changeme
 $export db.username=root
-$export evironment.db_url=changme
+$export db_url=jdbc:mysql://mysql:3306/Axway
 ```
 
 #### Environmentalization Container Example
