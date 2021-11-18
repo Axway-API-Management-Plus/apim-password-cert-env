@@ -1,10 +1,8 @@
 package com.axway;
 
 import com.vordel.common.Config;
-import com.vordel.common.crypto.PasswordCipher;
 import com.vordel.config.ConfigContext;
 import com.vordel.config.LoadableModule;
-import com.vordel.dwe.Service;
 import com.vordel.es.*;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.es.xes.PortableESPK;
@@ -25,12 +23,11 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private final CertHelper certHelper = new CertHelper();
     private final ExternalInstanceDomainCert externalInstanceDomainCert = new ExternalInstanceDomainCert();
-    private PasswordCipher passwordCipher;
+    private final List<String> mailConnectionTypes = Arrays.asList("NONE", "SSL", "TLS");
 
     @Override
     public void load(LoadableModule arg0, String arg1) {
         Trace.info("loading Password and Certificate Environment variable Module");
-        passwordCipher = Service.getInstance().getPasswordCipher();
     }
 
     @Override
@@ -60,10 +57,12 @@ public class ExternalConfigLoader implements LoadableModule {
             String key = keysIterator.next();
             if (!key.contains("_"))
                 continue;
+            if(key.startsWith("ldap_") || key.startsWith("jms_") || key.startsWith("smtp_") || key.startsWith("httpbasic_") || key.startsWith("cassandraconsistency_"))
+                continue;
             String filterName = key.split("_")[1];
             String passwordValue = envValues.get(key);
             String shorthandKey;
-           if (key.startsWith("radius")) {
+            if (key.startsWith("radius")) {
                 // [RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=HMHSRadiusClient/[RadiusServer]host=157.154.52.85,port=1812
                 shorthandKey = "[RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=" + filterName;
                 for (int i = 1; true; i++) {
@@ -78,10 +77,10 @@ public class ExternalConfigLoader implements LoadableModule {
                         port = "1812";
                     }
                     String radiusShorthandKey = shorthandKey + "/[RadiusServer]host=" + host + ",port=" + port;
-                    updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue, null);
+                    updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue);
                 }
             } else if (key.startsWith("cert_")) {
-               importCertificates(entityStore, passwordValue);
+                importCertificates(entityStore, passwordValue);
             } else if (key.startsWith("disablehttps_")) {
                 if (passwordValue.equalsIgnoreCase("true")) {
                     disableInterface(entityStore, filterName, "SSLInterface");
@@ -101,10 +100,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     for (X509Certificate certificate : certificates) {
                         String alias = importPublicCertificate(certificate, entityStore);
                         if (alias != null) {
-                            if (index == 0)
-                                updateCassandraCert(entityStore, alias, false);
-                            else
-                                updateCassandraCert(entityStore, alias, true);
+                            updateCassandraCert(entityStore, alias, index != 0);
                             index++;
                         }
                     }
@@ -138,7 +134,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     String pemKey = System.getenv("listenerkey" + "_" + filterName);
                     String caCert = System.getenv("listenercacert" + "_" + filterName);
                     String mTLS = System.getenv("listenermtls" + "_" + filterName);
-                    PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey);
+                    PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey, null);
                     Trace.info("Pem file alias name :" + pkcs12.getAlias());
                     configureP12(entityStore, filterName, pkcs12, mTLS);
                 } catch (Exception e) {
@@ -149,7 +145,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Updating Connect to URL client Auth certificate and key");
                     String pemKey = System.getenv("connecttourlkey" + "_" + filterName);
                     String caCert = System.getenv("connecttourlcacert" + "_" + filterName);
-                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey).getAlias();
+                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey, null).getAlias();
                     Trace.info("Pem file alias name :" + alias);
                     connectToURLConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
@@ -160,22 +156,26 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Updating JWT Sign -   Signing key");
                     String pemKey = System.getenv("jwtsignkey" + "_" + filterName);
                     String caCert = System.getenv("jwtsigncacert" + "_" + filterName);
-                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey).getAlias();
+                    String alias = System.getenv("jwtsignkid" + "_" + filterName);
+                    PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey, alias);
+                    if (alias == null) {
+                        alias = pkcs12.getAlias();
+                    }
                     Trace.info("Pem file alias name :" + alias);
                     jwtSignConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
                     Trace.error("Unable to add the  key and certificate from Environment variable", e);
                 }
             } else if (key.startsWith("jwtverifycert_")) {
-               try {
-                   Trace.info("Updating JWT  verify certificate");
-                   X509Certificate certificate = certHelper.parseX509(passwordValue).get(0);
-                   String alias = importPublicCertificate(certificate, entityStore);
-                   jwtVerifyConfigureCertificate(entityStore, filterName, alias);
-               } catch (Exception e) {
-                   Trace.error("Unable to add the certificate from Environment variable", e);
-               }
-           }else if (key.startsWith("gatewaytoplogycertandkey_")) {
+                try {
+                    Trace.info("Updating JWT  verify certificate");
+                    X509Certificate certificate = certHelper.parseX509(passwordValue).get(0);
+                    String alias = importPublicCertificate(certificate, entityStore);
+                    jwtVerifyConfigureCertificate(entityStore, filterName, alias);
+                } catch (Exception e) {
+                    Trace.error("Unable to add the certificate from Environment variable", e);
+                }
+            } else if (key.startsWith("gatewaytoplogycertandkey_")) {
                 try {
                     Trace.info("Updating Gateway topology certificate");
                     char[] password = System.getenv("gatewaytoplogycertandkeypassword" + "_" + filterName).toCharArray();
@@ -194,9 +194,9 @@ public class ExternalConfigLoader implements LoadableModule {
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
-            }else if(key.startsWith("cassandra_password")){
-               updateCassandraPassword(entityStore, passwordValue.toCharArray());
-           }
+            } else if (key.startsWith("cassandra_password")) {
+                updateCassandraPassword(entityStore, passwordValue.toCharArray());
+            }
         }
 
         Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(httpBasic);
@@ -206,7 +206,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 Map<String, String> attributes = entry.getValue();
                 String password = attributes.get("password");
                 String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password, null);
+                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password);
             }
         }
 
@@ -246,7 +246,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void importCertificates(EntityStore entityStore, String passwordValue){
+    private void importCertificates(EntityStore entityStore, String passwordValue) {
         try {
             List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
             for (X509Certificate certificate : certificates) {
@@ -264,17 +264,13 @@ public class ExternalConfigLoader implements LoadableModule {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-
-
-
     private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
-            value, Object secret) {
+            value) {
         Trace.info("updating password");
         Entity entity = getEntity(entityStore, shorthandKey);
         if (entity == null)
             return;
         value = Base64.getEncoder().encodeToString(value.getBytes());
-        //passwordCipher.encrypt()
         entity.setStringField(fieldName, value);
         entityStore.updateEntity(entity);
     }
@@ -288,7 +284,6 @@ public class ExternalConfigLoader implements LoadableModule {
         String password = attributes.get("password");
         if (password != null) {
             password = Base64.getEncoder().encodeToString(password.getBytes());
-            //passwordCipher.encrypt()
             entity.setStringField("password", password);
         }
         String username = attributes.get("username");
@@ -332,12 +327,11 @@ public class ExternalConfigLoader implements LoadableModule {
         } else {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName);
         }
-        if( entity == null){
-            Trace.error("Unable to locate SMTP connection : " + filterName );
+        if (entity == null) {
+            Trace.error("Unable to locate SMTP connection : " + filterName);
             return;
         }
         setUsernameAndPassword(attributes, entity, "username");
-
         String host = attributes.get("url");
         if (host != null) {
             entity.setStringField("smtpServer", host);
@@ -348,7 +342,6 @@ public class ExternalConfigLoader implements LoadableModule {
 
     private void updateAlertSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
         Trace.info("Updating SMTP Alert connection");
-
         if (filterName.equalsIgnoreCase("manager")) {
             Entity entity = getEntity(entityStore, "/[AlertManager]name=Default Alert Configuration/[EmailAlertSystem]name=API Manager Email Alerts");
             if (entity == null) {
@@ -368,7 +361,7 @@ public class ExternalConfigLoader implements LoadableModule {
         String connectionType = System.getenv("smtp_" + filterName + "_connectionType");
         if (connectionType != null) {
             // Possible Values NONE, SSL TLS
-            if (MailConnectionTypes.valueOf(connectionType) != null) {
+            if (mailConnectionTypes.contains(connectionType)) {
                 entity.setStringField("connectionType", connectionType);
             } else {
                 Trace.error("Invalid connection type : " + connectionType);
@@ -377,7 +370,7 @@ public class ExternalConfigLoader implements LoadableModule {
         String port = System.getenv("smtp_" + filterName + "_port");
         if (port != null) {
             try {
-                entity.setStringField(portFieldName,port);
+                entity.setStringField(portFieldName, port);
             } catch (NumberFormatException e) {
                 Trace.error("Invalid SMTP port number :" + port);
             }
@@ -402,8 +395,6 @@ public class ExternalConfigLoader implements LoadableModule {
             updateCertEntity(entityStore, entity, alias, filedName, append);
         }
     }
-
-
 
     private void disableCassandraSSL(EntityStore entityStore) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
@@ -493,11 +484,8 @@ public class ExternalConfigLoader implements LoadableModule {
             final String alias = principal.getName();
             Trace.info("Trusting cert :" + alias);
             String fieldName = "caCert";
-            if (i == 1) {
-                updateCertEntity(entityStore, entity, alias, fieldName, false);
-            } else
-                // Trust more than one certificate for mutual auth
-                updateCertEntity(entityStore, entity, alias, fieldName, true);
+            // Trust more than one certificate for mutual auth
+            updateCertEntity(entityStore, entity, alias, fieldName, i != 1);
         }
     }
 
@@ -647,7 +635,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key) throws Exception {
+    private PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key, String alias) throws Exception {
 
         PKCS12 pkcs12 = new PKCS12();
         List<X509Certificate> caCerts = new ArrayList<>();
@@ -655,12 +643,14 @@ public class ExternalConfigLoader implements LoadableModule {
             caCerts = certHelper.parseX509(ca);
         }
         X509Certificate certObj = certHelper.parseX509(cert).get(0);
-        String alias = certObj.getSubjectDN().getName();
-        if (alias.equals("")) {
-            alias = certObj.getSerialNumber().toString();
+        if (alias == null) {
+            alias = certObj.getSubjectDN().getName();
+            if (alias.equals("")) {
+                alias = certObj.getSerialNumber().toString();
+            }
         }
         PrivateKey privateKey = certHelper.parsePrivateKey(key);
-        if( privateKey == null){
+        if (privateKey == null) {
             throw new Exception("Unable to parse a private key");
         }
         Trace.info("Certificate alias name : " + alias);
@@ -731,7 +721,8 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
-    private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel, String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
+    private void updateCassandraConsistencyLevel(ShorthandKeyFinder shorthandKeyFinder, String shorthandKey, String readConsistencyLevelFieldName, String readConsistencyLevel,
+                                                 String writeConsistencyLevelFieldName, String writeConsistencyLevel) {
         List<Entity> kpsEntities = shorthandKeyFinder.getEntities(shorthandKey);
         if (kpsEntities != null) {
             Trace.info("Total number of KPS Store: " + kpsEntities.size() + " in entity : " + shorthandKey);
@@ -744,6 +735,5 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public enum MailConnectionTypes {NONE, SSL, TLS}
 
 }
