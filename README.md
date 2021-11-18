@@ -130,9 +130,10 @@ environment:
 
 |environment variable Name | Filter / Connection  Name | Description|
 --- | --- | ---
-|jwtsigncert_name|Connect to URL| Public certificate path or base64 encoded content |
-|jwtsignkey_name|Connect to URL| Private key of the certificate path or base64 encoded content  |
-|jwtsigncacert_name|Connect to URL| CA certificate path or baseb4 encoded content |
+|jwtsigncert_name|JWT Sign| Public certificate path or base64 encoded content |
+|jwtsignkey_name|JWT Sign| Private key of the certificate path or base64 encoded content  |
+|jwtsigncacert_name|JWT Sign| CA certificate path or baseb4 encoded content |
+|jwtsignkid_name|JWT Sign| Kid corresponding to certificate set as alias name in JWT Sign filter |
 
 ### Example
 

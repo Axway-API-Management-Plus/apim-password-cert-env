@@ -160,7 +160,11 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Updating JWT Sign -   Signing key");
                     String pemKey = System.getenv("jwtsignkey" + "_" + filterName);
                     String caCert = System.getenv("jwtsigncacert" + "_" + filterName);
-                    String alias = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey).getAlias();
+                    String alias = System.getenv("jwtsignkid" + "_" + filterName);
+                    PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, passwordValue, caCert, pemKey);
+                    if( alias == null){
+                        alias = pkcs12.getAlias();
+                    }
                     Trace.info("Pem file alias name :" + alias);
                     jwtSignConfigureP12(entityStore, filterName, alias);
                 } catch (Exception e) {
