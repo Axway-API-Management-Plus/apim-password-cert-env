@@ -275,7 +275,7 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private Entity getEntity(EntityStore entityStore, String shorthandKey) {
+    public Entity getEntity(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         return shorthandKeyFinder.getEntity(shorthandKey);
     }
@@ -396,7 +396,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void disableCassandraSSL(EntityStore entityStore) {
+    public void disableCassandraSSL(EntityStore entityStore) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
         entity.setBooleanField("useSSL", false);
