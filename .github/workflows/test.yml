@@ -13,7 +13,5 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-      - name: Delete Gateway dependent file
-        run: rm src/main/java/com/axway/ExternalConfigLoader.java
       - name: Build with Maven
-        run: mvn -f pom_test.xml test
+        run: mvn clean test
