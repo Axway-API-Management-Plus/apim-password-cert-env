@@ -18,6 +18,13 @@
         <apigateway.version>7.7.0.20210830-2</apigateway.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>local</id>
+            <url>file://${basedir}/lib</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -43,9 +50,8 @@
             <version>2.0.9</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
-            <groupId>resource-repo</groupId>
+            <groupId>axway</groupId>
             <artifactId>resource-repo</artifactId>
             <version>${apigateway.version}</version>
             <scope>test</scope>
@@ -56,13 +62,11 @@
             <version>30.0-jre</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.32</version>
             <scope>test</scope>
-
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -70,24 +74,18 @@
             <version>1.7.32</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/xerces/xercesImpl -->
         <dependency>
             <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
             <version>2.12.1</version>
             <scope>test</scope>
-
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.12.0</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -115,42 +113,42 @@
             <version>1.69</version>
         </dependency>
         <dependency>
-            <groupId>apigw-common</groupId>
+            <groupId>axway</groupId>
             <artifactId>apigw-common</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-trace</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-trace</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-apigateway</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-apigateway</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-core-runtime</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-core-runtime</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>es-core</groupId>
+            <groupId>axway</groupId>
             <artifactId>es-core</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-common</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-common</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-system</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-system</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
         <dependency>
-            <groupId>vordel-config</groupId>
+            <groupId>axway</groupId>
             <artifactId>vordel-config</artifactId>
             <version>${apigateway.version}</version>
         </dependency>
