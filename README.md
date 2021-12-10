@@ -432,6 +432,16 @@ mvn install:install-file \
 -Dversion=7.7.0.20210830-2 \
 -Dpackaging=jar \
 -DgeneratePom=true
+
+## JUnit Testing 
+mvn install:install-file \
+-Dfile=/home/axway/Axway-7.7.0-Aug2021/apigateway/system/lib/plugins/resource-repo-7.7.0.20210830-2.jar \
+-DgroupId=resource-repo \
+-DartifactId=resource-repo \
+-Dversion=7.7.0.20210830-2 \
+-Dpackaging=jar \
+-DgeneratePom=true
+
 ```
 
 - Create jar file using maven
