@@ -24,15 +24,7 @@ public class ExternalInstanceDomainCertTest {
             File certsXml = new File("src/test/resources/");
             certsXml = new File(certsXml, "certs.xml");
             externalInstanceDomainCert.certsFile(pkcs12, certsXml);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableKeyException e) {
+        } catch (KeyStoreException | NoSuchAlgorithmException | IOException | CertificateException | UnrecoverableKeyException e) {
             e.printStackTrace();
         }
     }
@@ -42,13 +34,7 @@ public class ExternalInstanceDomainCertTest {
         File file = new File("src/test/resources/mgmt.xml");
         try {
             externalInstanceDomainCert.updateMgmtFile(file, "cn=dss");
-        } catch (ParserConfigurationException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } catch (TransformerException e) {
+        } catch (ParserConfigurationException | IOException | SAXException | TransformerException e) {
             e.printStackTrace();
         }
     }

@@ -215,7 +215,7 @@ public class ExternalConfigLoader implements LoadableModule {
             for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
                 String filterName = entry.getKey();
                 Map<String, String> attributes = entry.getValue();
-                updateLdap(entityStore, attributes, filterName);
+                updateLDAP(entityStore, attributes, filterName);
             }
         }
         Map<String, Map<String, String>> jmsObjs = Util.parseCred(jms);
@@ -292,7 +292,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void updateLdap(EntityStore entityStore, Map<String, String> attributes, String filterName) {
+    public void updateLDAP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
         Trace.info("updating LDAP");
         Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
         if (entity == null)
@@ -305,7 +305,7 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private void updateJMS(EntityStore entityStore, Map<String, String> attributes, String filterName) {
+    public void updateJMS(EntityStore entityStore, Map<String, String> attributes, String filterName) {
         Trace.info("updating JMS");
         Entity entity = getEntity(entityStore, "/[JMSServiceGroup]name=JMS Services/[JMSService]name=" + filterName);
         if (entity == null)
@@ -318,12 +318,11 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private void updateSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
+    public void updateSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
         Trace.info("Updating SMTP connection");
         Entity entity;
         if (filterName.equalsIgnoreCase("manager")) {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=Portal SMTP");
-
         } else {
             entity = getEntity(entityStore, "/[SMTPServerGroup]name=SMTP Servers/[SMTPServer]name=" + filterName);
         }
@@ -340,7 +339,7 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private void updateAlertSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
+    public void updateAlertSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
         Trace.info("Updating SMTP Alert connection");
         if (filterName.equalsIgnoreCase("manager")) {
             Entity entity = getEntity(entityStore, "/[AlertManager]name=Default Alert Configuration/[EmailAlertSystem]name=API Manager Email Alerts");
@@ -357,7 +356,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void updateMailConnectionTypeAndPort(Entity entity, String filterName, String portFieldName) {
+    public void updateMailConnectionTypeAndPort(Entity entity, String filterName, String portFieldName) {
         String connectionType = System.getenv("smtp_" + filterName + "_connectionType");
         if (connectionType != null) {
             // Possible Values NONE, SSL TLS
@@ -377,16 +376,15 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void updateCassandraPassword(EntityStore entityStore, char[] password) {
+    public void updateCassandraPassword(EntityStore entityStore, char[] password) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
         String encodedPassword = Base64.getEncoder().encodeToString(String.valueOf(password).getBytes());
         entity.setStringField("password", encodedPassword);
         entityStore.updateEntity(entity);
-
     }
 
-    private void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
+    public void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
         boolean useSSL = entity.getBooleanValue("useSSL");
@@ -405,10 +403,9 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
-    private void disableInterface(EntityStore entityStore, String name, String interfaceType) {
+    public void disableInterface(EntityStore entityStore, String name, String interfaceType) {
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + name;
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Listener interface is not available");
             return;
@@ -449,7 +446,7 @@ public class ExternalConfigLoader implements LoadableModule {
         return null;
     }
 
-    private void configureP12(EntityStore entityStore, String name, PKCS12 pkcs12, String mTLS) {
+    public void configureP12(EntityStore entityStore, String name, PKCS12 pkcs12, String mTLS) {
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
@@ -489,7 +486,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private List<Entity> getEntities(EntityStore entityStore, String shorthandKey) {
+    public List<Entity> getEntities(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         return shorthandKeyFinder.getEntities(shorthandKey);
     }
@@ -523,13 +520,16 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    private void connectToURLConfigureP12(EntityStore entityStore, String name, String alias) {
+    public void connectToURLConfigureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find connect to URL filter");
-            return;
+            Trace.error("Unable to find connect to URL filter under container");
+            shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
         String fieldName = "sslUsers";
         for (Entity entity : entities) {
@@ -542,8 +542,11 @@ public class ExternalConfigLoader implements LoadableModule {
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find JWT verify filter");
-            return;
+            Trace.error("Unable to find JWT verify filter under container");
+            shorthandKey = "/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
 
         String fieldName = "publicKeyAlias";
@@ -553,13 +556,16 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
-    private void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
+    public void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTSignFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find JWT Sign filter");
-            return;
+            Trace.info("Unable to find JWT Sign filter under container");
+            shorthandKey = "/[FilterCircuit]**/[JWTSignFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
         String fieldName = "privateKeyAlias";
         for (Entity entity : entities) {
@@ -635,7 +641,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key, String alias) throws Exception {
+    public PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key, String alias) throws Exception {
 
         PKCS12 pkcs12 = new PKCS12();
         List<X509Certificate> caCerts = new ArrayList<>();
@@ -698,7 +704,7 @@ public class ExternalConfigLoader implements LoadableModule {
         return pkcs12;
     }
 
-    private void updateCassandraConsistencyLevel(EntityStore entityStore, String readConsistencyLevel, String writeConsistencyLevel) {
+    public void updateCassandraConsistencyLevel(EntityStore entityStore, String readConsistencyLevel, String writeConsistencyLevel) {
 
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         // Update KPS table consistency level
