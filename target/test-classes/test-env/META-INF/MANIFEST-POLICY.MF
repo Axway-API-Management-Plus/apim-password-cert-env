@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-VersionComment: Original factory configuration (Policy)
-Name: API Manager configuration (Policy)
-Description: API Manager configuration added from Policy Studio (Polic
- y)
-Version: v1 (Policy)
-

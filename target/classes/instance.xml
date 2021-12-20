@@ -1,7 +1,0 @@
-<entityStoreData>
-	<entity type="ExternalConfigLoader">
-		<fval name="name">
-			<value>External Configuration Loader</value>
-		</fval>
-	</entity>
-</entityStoreData>
