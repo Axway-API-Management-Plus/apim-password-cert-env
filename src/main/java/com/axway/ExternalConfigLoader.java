@@ -403,10 +403,9 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
-    private void disableInterface(EntityStore entityStore, String name, String interfaceType) {
+    public void disableInterface(EntityStore entityStore, String name, String interfaceType) {
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + name;
-        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
-        List<Entity> entities = shorthandKeyFinder.getEntities(shorthandKey);
+        List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
             Trace.error("Listener interface is not available");
             return;
@@ -696,7 +695,7 @@ public class ExternalConfigLoader implements LoadableModule {
         return pkcs12;
     }
 
-    private void updateCassandraConsistencyLevel(EntityStore entityStore, String readConsistencyLevel, String writeConsistencyLevel) {
+    public void updateCassandraConsistencyLevel(EntityStore entityStore, String readConsistencyLevel, String writeConsistencyLevel) {
 
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         // Update KPS table consistency level

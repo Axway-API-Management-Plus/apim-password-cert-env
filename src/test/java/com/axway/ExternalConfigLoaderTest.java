@@ -3,6 +3,7 @@ package com.axway;
 import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreFactory;
+import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.trace.Trace;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,6 +29,19 @@ public class ExternalConfigLoaderTest {
 
     private ExternalConfigLoader externalConfigLoader = new ExternalConfigLoader();
     private EntityStore entityStore;
+
+
+    @Test
+    public void testDisableInterface(){
+        String filterName = "traffic";
+        String interfaceType = "SSLInterface"; // for https
+        //String interfaceType = "InetInterface"; // for http
+        externalConfigLoader.disableInterface(entityStore, filterName, interfaceType );
+        String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + filterName;
+        Entity entity = externalConfigLoader.getEntities(entityStore, shorthandKey).get(0);
+        Assert.assertEquals("enabled", false, entity.getBooleanValue("false"));
+
+    }
 
     @Test
     public void testDisableCassandraSSL(){
@@ -132,9 +146,103 @@ public class ExternalConfigLoaderTest {
 
     @Test
     public void testUpdateCassandraCert(){
-        String filterName = "axway";
         String alias = "";
         externalConfigLoader.updateCassandraCert(entityStore, alias, true);
+    }
+
+    @Test
+    public void testUpdateCassandraKPSTablesConsistencyLevel(){
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]**/[KPSCassandraDataSource]name=Cassandra Storage");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("readConsistencyLevel", readConsistencyLevel, entity.getStringValue("readConsistencyLevel"));
+                Assert.assertEquals("writeConsistencyLevel", writeConsistencyLevel, entity.getStringValue("writeConsistencyLevel"));
+            }
+        }
+    }
+
+    @Test
+    public void testUpdateCassandraPortalConfigConsistencyLevel() {
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[PortalConfiguration]name=Portal Config");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("quotaReadConsistency", readConsistencyLevel, entity.getStringValue("quotaReadConsistency"));
+                Assert.assertEquals("quotaWriteConsistency", writeConsistencyLevel, entity.getStringValue("quotaWriteConsistency"));
+            }
+        }
+    }
+
+    @Test
+    public void testUpdateCassandraThrottlingConsistencyLevel() {
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[CassandraSettings]name=Cassandra Settings");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("throttlingReadConsistencyLevel", readConsistencyLevel, entity.getStringValue("throttlingReadConsistencyLevel"));
+                Assert.assertEquals("throttlingWriteConsistencyLevel", writeConsistencyLevel, entity.getStringValue("throttlingWriteConsistencyLevel"));
+            }
+        }
+    }
+
+    @Test
+    public void testUpdateCassandraAccessTokenConsistencyLevel() {
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[OAuth2StoresGroup]name=OAuth2 Stores/[AccessTokenStoreGroup]name=Access Token Stores/[AccessTokenPersist]**");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("readConsistencyLevel", readConsistencyLevel, entity.getStringValue("readConsistencyLevel"));
+                Assert.assertEquals("writeConsistencyLevel", writeConsistencyLevel, entity.getStringValue("writeConsistencyLevel"));
+            }
+        }
+    }
+
+    @Test
+    public void testUpdateCassandraAuthCodeConsistencyLevel() {
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[OAuth2StoresGroup]name=OAuth2 Stores/[AuthzCodeStoreGroup]name=Authorization Code Stores/[AuthzCodePersist]**");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("readConsistencyLevel", readConsistencyLevel, entity.getStringValue("readConsistencyLevel"));
+                Assert.assertEquals("writeConsistencyLevel", writeConsistencyLevel, entity.getStringValue("writeConsistencyLevel"));            }
+        }
+    }
+
+    @Test
+    public void testUpdateCassandraClientAccessTokenConsistencyLevel() {
+
+        String readConsistencyLevel = "ONE";
+        String writeConsistencyLevel = "ONE";
+        externalConfigLoader.updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
+        ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
+        List<Entity> kpsEntities = shorthandKeyFinder.getEntities("/[OAuth2StoresGroup]name=OAuth2 Stores/[ClientAccessTokenStoreGroup]name=Client Access Token Stores/[ClientAccessTokenPersist]**");
+        if (kpsEntities != null) {
+            for (Entity entity : kpsEntities) {
+                Assert.assertEquals("readConsistencyLevel", readConsistencyLevel, entity.getStringValue("readConsistencyLevel"));
+                Assert.assertEquals("writeConsistencyLevel", writeConsistencyLevel, entity.getStringValue("writeConsistencyLevel"));
+            }
+        }
     }
 
     @Test
