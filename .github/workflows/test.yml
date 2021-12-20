@@ -14,6 +14,6 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
       - name: Build with Maven
-        run: mvn test
+        run: mvn verify
       - name: jacoco-badge-generator
         uses: cicirello/jacoco-badge-generator@v2.5.0
