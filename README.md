@@ -1,5 +1,7 @@
 # APIM Environmentalization
 ![GitHub top language](.github/badges/jacoco.svg)
+![APIM Env](https://github.com/Axway-API-Management-Plus/apim-password-cert-env/actions/workflows/test.yml/badge.svg)
+
 
 Axway APIM supports environmentalization through Configuration Studio and envSettings.props file, it does partially support environment variables.
 

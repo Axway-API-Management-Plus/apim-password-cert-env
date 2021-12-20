@@ -4,6 +4,8 @@ import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreFactory;
 import com.vordel.es.util.ShorthandKeyFinder;
+import com.vordel.es.xes.PortableESPK;
+import com.vordel.log.Log;
 import com.vordel.trace.Trace;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,6 +16,8 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -27,6 +31,8 @@ import static org.powermock.api.mockito.PowerMockito.mockStatic;
 @SuppressStaticInitializationFor({ "com.vordel.trace.Trace" })
 @PowerMockIgnore("javax.management.*")
 public class ExternalConfigLoaderTest {
+
+    private static Logger logger = LoggerFactory.getLogger(ExternalConfigLoaderTest.class);
 
     private ExternalConfigLoader externalConfigLoader = new ExternalConfigLoader();
     private EntityStore entityStore;
@@ -269,43 +275,43 @@ public class ExternalConfigLoaderTest {
     }
 
     @Test
-    @Ignore
-
     public void testConnectToURLKeyAndCertificate() throws Exception {
         String filterName = "backend2ssl";
-        String cert ="";
 
-        String pemKey = System.getenv("listenerkey" + "_" + filterName);
-        String caCert = System.getenv("listenercacert" + "_" + filterName);
+        String pemKey = "src/test/resources/acp-key.pem";
+        String cert = "src/test/resources/acp-crt.pem";
+        String caCert = "src/test/resources/acp-ca.pem";
+        String alias = "alias-test";
 
-        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, null);
-        Trace.info("Pem file alias name :" + pkcs12.getAlias());
+        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, alias);
         externalConfigLoader.connectToURLConfigureP12(entityStore, filterName, pkcs12.getAlias());
 
-        String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[ConnectToURLFilter]name=" + filterName;
+        String shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + filterName;
         List<Entity> entities =  externalConfigLoader.getEntities(entityStore, shorthandKey);
         Entity entity = entities.get(0);
+
+        Assert.assertEquals("sslUsers", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("sslUsers").getValueList().get(0).getRef()).toShorthandString());
+
     }
 
 
     @Test
-    @Ignore
     public void testJWTSignKeyAndCertificate() throws Exception {
         String filterName = "jwtsign";
-        String cert ="";
 
-        String pemKey = System.getenv("jwtsignkey" + "_" + filterName);
-        String caCert = System.getenv("jwtsigncacert" + "_" + filterName);
-        String alias = System.getenv("jwtsignkid" + "_" + filterName);
+        String pemKey = "src/test/resources/acp-key.pem";
+        String cert = "src/test/resources/acp-crt.pem";
+        String caCert = "src/test/resources/acp-ca.pem";
+        String alias = "alias-test";
 
-        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, null);
-        Trace.info("Pem file alias name :" + pkcs12.getAlias());
+        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, alias);
+        logger.info("Pem file alias name : {}" , pkcs12.getAlias());
         externalConfigLoader.jwtSignConfigureP12(entityStore, filterName, alias);
 
-
-        String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTSignFilter]name=" + filterName;
+        String shorthandKey = "/[FilterCircuit]**/[JWTSignFilter]name=" + filterName;
         List<Entity> entities =  externalConfigLoader.getEntities(entityStore, shorthandKey);
         Entity entity = entities.get(0);
+        Assert.assertEquals("privateKeyAlias", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("privateKeyAlias").getValueList().get(0).getRef()).toShorthandString());
     }
 
 

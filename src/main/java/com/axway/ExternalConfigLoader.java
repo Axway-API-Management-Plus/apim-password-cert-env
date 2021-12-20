@@ -525,8 +525,11 @@ public class ExternalConfigLoader implements LoadableModule {
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find connect to URL filter");
-            return;
+            Trace.error("Unable to find connect to URL filter under container");
+            shorthandKey = "/[FilterCircuit]**/[ConnectToURLFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
         String fieldName = "sslUsers";
         for (Entity entity : entities) {
@@ -539,8 +542,11 @@ public class ExternalConfigLoader implements LoadableModule {
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find JWT verify filter");
-            return;
+            Trace.error("Unable to find JWT verify filter under container");
+            shorthandKey = "/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
 
         String fieldName = "publicKeyAlias";
@@ -555,8 +561,11 @@ public class ExternalConfigLoader implements LoadableModule {
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTSignFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
         if (entities.isEmpty()) {
-            Trace.error("Unable to find JWT Sign filter");
-            return;
+            Trace.info("Unable to find JWT Sign filter under container");
+            shorthandKey = "/[FilterCircuit]**/[JWTSignFilter]name=" + name;
+            entities = getEntities(entityStore, shorthandKey);
+            if(entities.isEmpty())
+                return;
         }
         String fieldName = "privateKeyAlias";
         for (Entity entity : entities) {
