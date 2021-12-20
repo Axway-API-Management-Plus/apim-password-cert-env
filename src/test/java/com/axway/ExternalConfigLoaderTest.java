@@ -255,23 +255,23 @@ public class ExternalConfigLoaderTest {
     }
 
     @Test
-    @Ignore
-
     public void testListenerKeyAndCertificate() throws Exception {
         String filterName = "traffic";
 
-        String cert ="";
-        String pemKey = System.getenv("listenerkey" + "_" + filterName);
-        String caCert = System.getenv("listenercacert" + "_" + filterName);
+        String pemKey = "src/test/resources/acp-key.pem";
+        String cert = "src/test/resources/acp-crt.pem";
+        String caCert = "src/test/resources/acp-ca.pem";
+        String alias = "alias-test";
         String mTLS = "false";
 
-        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, null);
-        Trace.info("Pem file alias name :" + pkcs12.getAlias());
+        PKCS12 pkcs12 = externalConfigLoader.importCertAndKeyAndCA(entityStore, cert, caCert, pemKey, alias);
         externalConfigLoader.configureP12(entityStore, filterName, pkcs12, mTLS);
 
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[SSLInterface]name=" + filterName;
         List<Entity> entities =  externalConfigLoader.getEntities(entityStore, shorthandKey);
         Entity entity = entities.get(0);
+        Assert.assertEquals("serverCert", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("serverCert").getValueList().get(0).getRef()).toShorthandString());
+
     }
 
     @Test
