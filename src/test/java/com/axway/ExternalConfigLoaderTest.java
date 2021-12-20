@@ -40,7 +40,7 @@ public class ExternalConfigLoaderTest {
         externalConfigLoader.disableInterface(entityStore, filterName, interfaceType );
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + filterName;
         Entity entity = externalConfigLoader.getEntities(entityStore, shorthandKey).get(0);
-        Assert.assertEquals("enabled", false, entity.getBooleanValue("false"));
+        Assert.assertEquals("enabled", false, entity.getBooleanValue("enabled"));
 
     }
 
@@ -59,7 +59,7 @@ public class ExternalConfigLoaderTest {
         String ldapConnectionName = "axway";
         Map<String, String> attributes = new HashMap<>();
         attributes.put("url","ldap://localhost:389");
-        attributes.put("userName","cn=test,dc=axway,dc=com");
+        attributes.put("username","cn=test,dc=axway,dc=com");
         attributes.put("password","changeme");
         externalConfigLoader.updateLDAP(entityStore, attributes, ldapConnectionName);
         String shorthandKey = "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + ldapConnectionName;
@@ -75,7 +75,7 @@ public class ExternalConfigLoaderTest {
         String filterName = "axway";
         Map<String, String> attributes = new HashMap<>();
         attributes.put("providerURL","ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617");
-        attributes.put("userName","axway");
+        attributes.put("username","axway");
         attributes.put("password","changeme");
         externalConfigLoader.updateJMS(entityStore, attributes, filterName);
         String shorthandKey = "/[JMSServiceGroup]name=JMS Services/[JMSService]name=" + filterName;
