@@ -74,7 +74,7 @@ public class ExternalConfigLoaderTest {
     public void testUpdateJMS(){
         String filterName = "axway";
         Map<String, String> attributes = new HashMap<>();
-        attributes.put("providerURL","ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617");
+        attributes.put("url","ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617");
         attributes.put("username","axway");
         attributes.put("password","changeme");
         externalConfigLoader.updateJMS(entityStore, attributes, filterName);
