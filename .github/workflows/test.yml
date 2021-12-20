@@ -28,7 +28,6 @@ jobs:
           path: target/site/jacoco/
       - name: Commit and push the coverage badges and summary file
         run: |
-          cd badges
           if [[ `git status --porcelain *.svg *.json` ]]; then
             git config --global user.name 'rathnapandi'
             git config --global user.email 'rathnapandi.n@gmail.com'
