@@ -1,4 +1,5 @@
 # APIM Environmentalization
+![GitHub top language](.github/badges/jacoco.svg)
 
 Axway APIM supports environmentalization through Configuration Studio and envSettings.props file, it does partially support environment variables.
 
