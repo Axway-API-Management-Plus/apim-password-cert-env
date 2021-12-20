@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><HTTP monitoringEnabled="false" name="Management Services" provider="HTTP">
+    <SSLInterface activetimeout="60000" address="*" auditConn="1" backlog="64" ciphers="FIPS:!SSLv3:!aNULL:!TLSv1:!kRSA" clientAuth="required" depth="1" dhParams="MIICCAKCAgEAha5LZtsH67sVXYuDz05Oo1HdTeGmgGnf3M69pZUVbjQ9ge5zDkfLg3ajlHDnSPP8nL26WbZ+0+D0NKpdtuJA6/cmSaNnSs7T0FCiWhifOghojcYhdVs4R2M0Qzj+x91BPSt1lAzJyaKeLclkh9VXVTmfsVNXZWS/4GOV1bSpElN8g4BYfzHoKp5fOZIrf0qGsHEgq20zT/BavHL8ZwdN20qHEeVBuZdYXGA6kbFrEl46JscRzOS5vfbN/grF0y5r8Guo8astMdb/2M2slzpwuWKnJ78Y8og9e1lZcpdmrvlmQRvxRH+oJu+ckkErxxC9nV0k3vIJ8UpmNFXd6Qe/IWVsr8RBrwx6QyZFNM5kgWJU2twgTPJM6VCmurAZtecdoHt2gr++CnLXqlTeb+9gGjeekuv0tHVDAfTBM+tcep0mKu+VxhOjlvbzok4wvpDyhXd+kLFWbzMm4bfIRNai5Z0M5Rj1xg560Txt2ozp3o6aYMvRUz8CQkSyFOcckAkwMPq5Ae86e9jOHdnP3LyX7HXQ1HsFPPS65nxxq/n4eV0rBTcDo20AhlNdTixsFV7kgpDvt7IFdAAgNrFCmPIAVg2Bs566WUFPWfwhVKULjiN+xXCQEWo+lZG7vm3Sc29/zSDLEd2FXaPSzGd6jPwAEf8OhaIIFAYeHoXBboWp3usCAQI=" enabled="1" idletimeout="60000" inputEncodings=".inherit" maxRequestMemory="27262976" name="Internal Management HTTPS Interface" opsSettingsUsage="PORT" outputEncodings=".inherit" port="${env.PORT.MANAGEMENT}" protocol="any" recordCircuitPath="0" recordInboundTxns="0" recordOutboundTxns="0" recordTrace="0" resolveSubjectCNtoNetAddr="0" reuseAddress="false" tracelevel="INHERIT" transparentProxy="false">
+        <include file="certs.xml"/>
+        <Identity cert="topology-cert"/>
+        <VerifyHasTrustedSigner/>
+        
+        <attribute key="ssloptions">nosslv2</attribute>
+        <attribute key="ssloptions">nosslv3</attribute>
+        <TrustedCA cert="CN=CACERTIFICATE,O=AXWAY,L=Scottsdale,ST=AZ,C=US"/>
+    </SSLInterface>
+    <MetricsFeedServer httpMethod="*" uriprefix="/metrics"/>
+    <OPDbViewer httpMethod="*" provider="HTTPops" uriprefix="/ops/"/>
+    <Application httpMethod="*" sessiontimeoutSeconds="300" uriprefix="/">
+        <Servlet class="org.glassfish.jersey.servlet.ServletContainer" name="api" uri="api">
+            <Property name="jersey.config.server.provider.classnames" value="org.glassfish.jersey.media.multipart.MultiPartFeature,com.vordel.common.apiserver.filter.SecureHeadersBindingFeature"/>
+            <Property name="jersey.config.server.provider.packages" value="com.vordel.api.monitoring;com.vordel.api.management;com.vordel.api.configuration;com.vordel.dwe.file;com.vordel.kps.rest;com.vordel.api.domainaudit;com.vordel.ama.rest;com.vordel.api.discovery"/>
+        </Servlet>
+    </Application>
+</HTTP>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Util.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">apim-env-module</a> &gt; <a href="index.source.html" class="el_package">com.axway</a> &gt; <span class="el_source">Util.java</span></div><h1>Util.java</h1><pre class="source lang-java linenums">package com.axway;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+<span class="nc" id="L7">public final  class  Util {</span>
+
+    public static Map&lt;String, Map&lt;String, String&gt;&gt; parseCred(Map&lt;String, String&gt; envMap) {
+
+<span class="fc" id="L11">        Map&lt;String, Map&lt;String, String&gt;&gt; values = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L12" title="2 of 4 branches missed.">        if (envMap != null &amp;&amp; !envMap.isEmpty()) {</span>
+<span class="fc" id="L13">            Iterator&lt;String&gt; keyIterator = envMap.keySet().iterator();</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">            while (keyIterator.hasNext()) {</span>
+<span class="fc" id="L15">                String key = keyIterator.next();</span>
+<span class="fc" id="L16">                String[] delimitedKeys = key.split(&quot;_&quot;);</span>
+                String filterName;
+<span class="fc bfc" id="L18" title="All 2 branches covered.">                if (delimitedKeys.length == 3) {</span>
+<span class="fc" id="L19">                    filterName = delimitedKeys[1];</span>
+<span class="fc" id="L20">                    String attribute = delimitedKeys[2];</span>
+<span class="fc" id="L21">                    String value = envMap.get(key);</span>
+<span class="fc" id="L22">                    Map&lt;String, String&gt; attributes = values.get(filterName);</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">                    if (attributes == null) {</span>
+<span class="fc" id="L24">                        attributes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L25">                        values.put(filterName, attributes);</span>
+                    }
+<span class="fc" id="L27">                    attributes.put(attribute, value);</span>
+                }
+<span class="fc" id="L29">            }</span>
+        }
+<span class="fc" id="L31">        return values;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
