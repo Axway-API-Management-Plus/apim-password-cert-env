@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExternalInstanceDomainCert.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">apim-env-module</a> &gt; <a href="index.source.html" class="el_package">com.axway</a> &gt; <span class="el_source">ExternalInstanceDomainCert.java</span></div><h1>ExternalInstanceDomainCert.java</h1><pre class="source lang-java linenums">package com.axway;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Base64;
+
+public class ExternalInstanceDomainCert {
+
+<span class="fc" id="L33">    private static final Logger log = LogManager.getLogger(ExternalInstanceDomainCert.class);</span>
+
+
+<span class="fc" id="L36">    public final static String LINE_SEPARATOR = System.getProperty(&quot;line.separator&quot;);</span>
+    private Base64.Encoder encoder;
+
+<span class="fc" id="L39">    public ExternalInstanceDomainCert() {</span>
+<span class="fc" id="L40">        encoder = Base64.getMimeEncoder(64, LINE_SEPARATOR.getBytes());</span>
+<span class="fc" id="L41">    }</span>
+
+
+    // File certsXml = new File(Config.getVDir(&quot;VINSTDIR&quot;), &quot;conf&quot;);
+    // File certsXml = new File(&quot;src/&quot;);
+    // certsXml = new File(certsXml, &quot;certs.xml&quot;);
+
+
+    public void updateMgmtFile(File mgmtFile, String CAAlias) throws ParserConfigurationException, IOException, SAXException, TransformerException {
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (mgmtFile.exists()) {</span>
+<span class="fc" id="L51">            log.info(&quot;Management file mgmt.xml exists&quot;);</span>
+        }
+<span class="fc" id="L53">        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();</span>
+<span class="fc" id="L54">        DocumentBuilder builder = factory.newDocumentBuilder();</span>
+<span class="fc" id="L55">        Document document = builder.parse(mgmtFile);</span>
+<span class="fc" id="L56">        NodeList nodeList = document.getElementsByTagName(&quot;SSLInterface&quot;);</span>
+<span class="fc" id="L57">        Element sslInterface = (Element) nodeList.item(0);</span>
+<span class="fc" id="L58">        NodeList trustedCA = sslInterface.getElementsByTagName(&quot;TrustedCA&quot;);</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (trustedCA.getLength() == 0) {</span>
+<span class="nc" id="L60">            Element trustedCAElement = document.createElement(&quot;TrustedCA&quot;);</span>
+<span class="nc" id="L61">            trustedCAElement.setAttribute(&quot;cert&quot;, CAAlias);</span>
+<span class="nc" id="L62">            sslInterface.appendChild(trustedCAElement);</span>
+        }
+<span class="fc" id="L64">        sslInterface.setAttribute(&quot;address&quot;, &quot;*&quot;);</span>
+<span class="fc" id="L65">        NodeList verifyIsLocalNodeManager = sslInterface.getElementsByTagName(&quot;VerifyIsLocalNodeManager&quot;);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (verifyIsLocalNodeManager.getLength() &gt; 0) {</span>
+<span class="nc" id="L67">            Node node = verifyIsLocalNodeManager.item(0);</span>
+<span class="nc" id="L68">            sslInterface.removeChild(node);</span>
+        }
+<span class="fc" id="L70">        TransformerFactory transformerFactory = TransformerFactory.newInstance();</span>
+<span class="fc" id="L71">        Transformer transformer = transformerFactory.newTransformer();</span>
+<span class="fc" id="L72">        DOMSource source = new DOMSource(document);</span>
+<span class="fc" id="L73">        FileWriter writer = new FileWriter(mgmtFile);</span>
+<span class="fc" id="L74">        StreamResult result = new StreamResult(writer);</span>
+<span class="fc" id="L75">        transformer.transform(source, result);</span>
+//        byte[] data = Files.readAllBytes(Paths.get(mgmtFile.getAbsolutePath()));
+//        System.out.println(new String(data));
+
+<span class="fc" id="L79">    }</span>
+
+    public String certsFile(PKCS12 pkcs12, File certsXml) throws IOException, CertificateException {
+
+<span class="fc" id="L83">        String CAAlias = null;</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (certsXml.exists()) {</span>
+<span class="fc" id="L85">            log.info(&quot;Management file certs.xml exists&quot;);</span>
+        }
+<span class="fc" id="L87">        StringBuilder stringBuilder = new StringBuilder();</span>
+<span class="fc" id="L88">        stringBuilder.append(&quot;&lt;ConfigurationFragment&gt;&quot;);</span>
+<span class="fc" id="L89">        PrivateKey privateKey = pkcs12.getPrivateKey();</span>
+
+<span class="fc" id="L91">        String privateKeyEncoded = encoder.encodeToString(privateKey.getEncoded());</span>
+<span class="fc" id="L92">        Certificate[] certificates = pkcs12.getCertificates();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (Certificate certificate : certificates) {</span>
+<span class="fc" id="L94">            PublicKey publicKey = certificate.getPublicKey();</span>
+<span class="fc" id="L95">            byte[] data = &quot;test&quot;.getBytes();</span>
+<span class="fc" id="L96">            byte[] digitalSignature = signData(data, privateKey);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (verifySignature(data, publicKey, digitalSignature)) {</span>
+<span class="fc" id="L98">                createCertificateElement(stringBuilder, pkcs12.getAlias());</span>
+<span class="fc" id="L99">                createPublicKeyElement(stringBuilder, certificate);</span>
+<span class="fc" id="L100">                stringBuilder.append(&quot;&lt;attribute key=\&quot;key\&quot;&gt;&quot;);</span>
+<span class="fc" id="L101">                stringBuilder.append(privateKeyEncoded);</span>
+<span class="fc" id="L102">                stringBuilder.append(&quot;&lt;/attribute&gt;&quot;);</span>
+            } else {
+<span class="fc" id="L104">                X509Certificate cert = (X509Certificate) certificate;</span>
+<span class="fc" id="L105">                CAAlias = cert.getSubjectDN().getName();</span>
+<span class="fc" id="L106">                createCertificateElement(stringBuilder, CAAlias);</span>
+<span class="fc" id="L107">                createPublicKeyElement(stringBuilder, certificate);</span>
+            }
+<span class="fc" id="L109">            endCertificateElement(stringBuilder);</span>
+        }
+<span class="fc" id="L111">        stringBuilder.append(&quot;&lt;/ConfigurationFragment&gt;&quot;);</span>
+<span class="fc" id="L112">        FileOutputStream fileOutputStream = null;</span>
+
+        try {
+<span class="fc" id="L115">            fileOutputStream = new FileOutputStream(certsXml);</span>
+<span class="fc" id="L116">            fileOutputStream.write(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L117">            fileOutputStream.close();</span>
+        } finally {
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">            if (fileOutputStream != null) {</span>
+<span class="fc" id="L120">                fileOutputStream.close();</span>
+            }
+        }
+<span class="fc" id="L123">        return CAAlias;</span>
+    }
+
+    public void createCertificateElement(StringBuilder stringBuilder, String alias) {
+<span class="fc" id="L127">        stringBuilder.append(&quot;&lt;Certificate id=\&quot;&quot;);</span>
+<span class="fc" id="L128">        stringBuilder.append(alias);</span>
+<span class="fc" id="L129">        stringBuilder.append(&quot;\&quot;&gt;&quot;);</span>
+<span class="fc" id="L130">    }</span>
+
+    public void endCertificateElement(StringBuilder stringBuilder) {
+<span class="fc" id="L133">        stringBuilder.append(&quot;&lt;/Certificate&gt;&quot;);</span>
+<span class="fc" id="L134">    }</span>
+
+    public void createPublicKeyElement(StringBuilder stringBuilder, Certificate certificate) throws CertificateEncodingException {
+<span class="fc" id="L137">        stringBuilder.append(&quot;&lt;attribute key=\&quot;content\&quot;&gt;&quot;);</span>
+<span class="fc" id="L138">        stringBuilder.append(encoder.encodeToString(certificate.getEncoded()));</span>
+<span class="fc" id="L139">        stringBuilder.append(&quot;&lt;/attribute&gt;&quot;);</span>
+
+<span class="fc" id="L141">    }</span>
+
+
+    public static byte[] signData(byte[] data, PrivateKey key) {
+<span class="fc" id="L145">        Signature signer = null;</span>
+        try {
+<span class="fc" id="L147">            signer = Signature.getInstance(&quot;SHA256withRSA&quot;);</span>
+<span class="fc" id="L148">            signer.initSign(key);</span>
+<span class="fc" id="L149">            signer.update(data);</span>
+<span class="fc" id="L150">            return (signer.sign());</span>
+<span class="nc" id="L151">        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {</span>
+<span class="nc" id="L152">            e.printStackTrace();</span>
+<span class="nc" id="L153">            return null;</span>
+        }
+    }
+
+    public static boolean verifySignature(byte[] data, PublicKey key, byte[] sig) {
+<span class="fc" id="L158">        Signature signer = null;</span>
+        try {
+<span class="fc" id="L160">            signer = Signature.getInstance(&quot;SHA256withRSA&quot;);</span>
+<span class="fc" id="L161">            signer.initVerify(key);</span>
+<span class="fc" id="L162">            signer.update(data);</span>
+<span class="fc" id="L163">            return (signer.verify(sig));</span>
+<span class="nc" id="L164">        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {</span>
+<span class="nc" id="L165">            e.printStackTrace();</span>
+<span class="nc" id="L166">            return false;</span>
+        }
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
