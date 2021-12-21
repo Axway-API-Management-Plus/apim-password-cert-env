@@ -61,25 +61,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 continue;
             String filterName = key.split("_")[1];
             String passwordValue = envValues.get(key);
-            String shorthandKey;
-            if (key.startsWith("radius")) {
-                // [RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=HMHSRadiusClient/[RadiusServer]host=157.154.52.85,port=1812
-                shorthandKey = "[RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=" + filterName;
-                for (int i = 1; true; i++) {
-                    String customHostKey = "radius." + i + "." + filterName + ".host";
-                    String host = envValues.get(customHostKey);
-                    if (host == null) {
-                        break;
-                    }
-                    String customPortKey = "radius." + i + "." + filterName + ".port";
-                    String port = envValues.get(customPortKey);
-                    if (port == null) {
-                        port = "1812";
-                    }
-                    String radiusShorthandKey = shorthandKey + "/[RadiusServer]host=" + host + ",port=" + port;
-                    updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue);
-                }
-            } else if (key.startsWith("cert_")) {
+            if (key.startsWith("cert_")) {
                 importCertificates(entityStore, passwordValue);
             } else if (key.startsWith("disablehttps_")) {
                 if (passwordValue.equalsIgnoreCase("true")) {
@@ -245,7 +227,17 @@ public class ExternalConfigLoader implements LoadableModule {
                 Map<String, String> attributes = entry.getValue();
                 String password = attributes.get("password");
                 String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password);
+
+                Entity entity = getEntity(entityStore, shorthandKey);
+                if (entity == null) {
+                    Trace.error("Unable to find httpbasic auth profile :"+ filterName);
+                    return;
+                }
+                Trace.info("updating httpbasic profile password");
+                String base64Password = Base64.getEncoder().encodeToString(password.getBytes());
+                entity.setStringField("httpAuthPass", base64Password);
+                entityStore.updateEntity(entity);
+
             }
         }
     }
@@ -268,16 +260,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
-            value) {
-        Trace.info("updating password");
-        Entity entity = getEntity(entityStore, shorthandKey);
-        if (entity == null)
-            return;
-        value = Base64.getEncoder().encodeToString(value.getBytes());
-        entity.setStringField(fieldName, value);
-        entityStore.updateEntity(entity);
-    }
+
 
     public Entity getEntity(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
@@ -541,7 +524,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
+    public void jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);

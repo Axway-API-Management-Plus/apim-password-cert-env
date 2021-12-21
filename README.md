@@ -203,9 +203,6 @@ $export disablehttps_portname=true
 $export disablehttp_portname=true
 ```
 
-- Radius
-```bash
-```
 ### Cassandra
 
 - Disable Cassandra SSL

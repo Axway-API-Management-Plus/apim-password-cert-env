@@ -352,6 +352,12 @@ public class ExternalConfigLoaderTest {
     }
 
     @Test
+    public void testJWTVerifyConfigureCertificate(){
+        externalConfigLoader.jwtVerifyConfigureCertificate(entityStore, "jwtverify", "cn=test");
+
+    }
+
+    @Test
     public void testConnectToURLKeyAndCertificate() throws Exception {
         String filterName = "backend2ssl";
 
