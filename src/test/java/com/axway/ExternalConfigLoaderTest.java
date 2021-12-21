@@ -39,6 +39,18 @@ public class ExternalConfigLoaderTest {
 
 
     @Test
+    public void testUpdateHttpBasic(){
+        String filterName = "apimanager";
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("httpbasic_apimanager_password","changeme");
+        Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(attributes);
+        externalConfigLoader.updateHttpBasic(httpBasicObjs,entityStore);
+        String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
+        Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+        Assert.assertEquals("httpAuthPass", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("password"))));
+    }
+
+    @Test
     public void testDisableInterface(){
         String filterName = "traffic";
         String interfaceType = "SSLInterface"; // for https
@@ -152,11 +164,33 @@ public class ExternalConfigLoaderTest {
     }
 
     @Test
-    @Ignore
+    public void testUpdateCassandraCert() throws NoSuchFieldException, IllegalAccessException {
 
-    public void testUpdateCassandraCert(){
-        String alias = "";
-        externalConfigLoader.updateCassandraCert(entityStore, alias, true);
+        Map<String, String> envVars =  new HashMap<>();
+        String certificate = "-----BEGIN CERTIFICATE-----\n" +
+            "MIICxDCCAaygAwIBAgIGAW5HwjW7MA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMM\n" +
+            "BkRvbWFpbjAgFw0xOTEwMzEyMTI1NDBaGA8yMTE5MTAxNDIxMjU0MFowETEPMA0G\n" +
+            "A1UEAwwGRG9tYWluMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlX2n\n" +
+            "ePJaDMGWpNUwgyCfyDVIMjLKRjvJ7bID+BF+LI9gxJ2mUVFXl822fT3m2BR5oG8s\n" +
+            "N/8JgvM+ie2PHxAWYokQcRSwYAFmMMMKp69M8sqAJHrm/QoVvFwCFVm+7DqJVKWu\n" +
+            "q5K+J+ophJQNhvSl0KLorFI8IodLZq5cDtyhfaB27Zbk1A9ha4PfXmnoFWbDwoZU\n" +
+            "UanoUy3xisbZ6HTvGKkawn53XaRJo5rn13b/9Np8PCJZLNmAiWoIB3NVyetwxS5C\n" +
+            "4FwIm2ZRJZny5l+CgJ9Frs9Y0teAz4Z1bqJWn+kfBCxGW8Ab7W7t6ah3a/WoQxi2\n" +
+            "HDU/134lBvoPhh9udwIDAQABoyAwHjAPBgNVHRMECDAGAQH/AgEAMAsGA1UdDwQE\n" +
+            "AwICvDANBgkqhkiG9w0BAQsFAAOCAQEAlEo5pn1j8spkVg3RbLap80iwo8Slk+Fw\n" +
+            "v8tGqR+GJEiJXDgnPPDMkrE+wtC1kT4VxyQw8D0eittUPjFmoMdxoUwM5Ddf4qS7\n" +
+            "3LBO74CULyFZ0teyJoaVBjaG6MTg0ZfwUZt552IVLBgjbbE/yYu/dOJckpZlcZE7\n" +
+            "yRw3ffr/trqh2B5tzwJMnWsakRwAtooRJ2RZ8ufQUhEYdI/7KJajZDQ0IFxleyPZ\n" +
+            "PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6\n" +
+            "6Xi8yAoGAN92VRi93iss3A7zoAsrPXCO7pNZdz3QzJ3Jjv9KW48DmQ==\n" +
+            "-----END CERTIFICATE-----";
+        envVars.put("cassandraCert_root", certificate);
+        setupEnvVariables(envVars);
+        externalConfigLoader.updatePassword(entityStore);
+        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
+        Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+        Assert.assertEquals("sslTrustedCerts", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("sslTrustedCerts").getValueList().get(0).getRef()).toShorthandString());
+
     }
 
     @Test

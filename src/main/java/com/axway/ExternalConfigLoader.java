@@ -43,7 +43,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("ExternalConfigLoader - Environment variables update is complete");
     }
 
-    private void updatePassword(EntityStore entityStore) {
+    public void updatePassword(EntityStore entityStore) {
         Map<String, String> envValues = System.getenv();
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
@@ -200,15 +200,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
 
         Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(httpBasic);
-        if (!httpBasicObjs.isEmpty()) {
-            for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
-                String filterName = entry.getKey();
-                Map<String, String> attributes = entry.getValue();
-                String password = attributes.get("password");
-                String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password);
-            }
-        }
+        updateHttpBasic(httpBasicObjs, entityStore);
 
         Map<String, Map<String, String>> ldapObjs = Util.parseCred(ldap);
         if (!ldapObjs.isEmpty()) {
@@ -242,6 +234,18 @@ public class ExternalConfigLoader implements LoadableModule {
                 updateCassandraConsistencyLevel(entityStore, readConsistencyLevel, writeConsistencyLevel);
             } else {
                 Trace.info("cassandraconsistency_readlevel and cassandraconsistency_writelevel environment variables are not found");
+            }
+        }
+    }
+
+    public void updateHttpBasic(Map<String, Map<String, String>> httpBasicObjs, EntityStore entityStore){
+        if (!httpBasicObjs.isEmpty()) {
+            for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
+                String filterName = entry.getKey();
+                Map<String, String> attributes = entry.getValue();
+                String password = attributes.get("password");
+                String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
+                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password);
             }
         }
     }
