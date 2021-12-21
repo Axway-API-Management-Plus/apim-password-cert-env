@@ -43,7 +43,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("ExternalConfigLoader - Environment variables update is complete");
     }
 
-    private void updatePassword(EntityStore entityStore) {
+    public void updatePassword(EntityStore entityStore) {
         Map<String, String> envValues = System.getenv();
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
@@ -61,25 +61,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 continue;
             String filterName = key.split("_")[1];
             String passwordValue = envValues.get(key);
-            String shorthandKey;
-            if (key.startsWith("radius")) {
-                // [RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=HMHSRadiusClient/[RadiusServer]host=157.154.52.85,port=1812
-                shorthandKey = "[RadiusClients]name=RADIUS Client Settings/[RadiusClient]clientName=" + filterName;
-                for (int i = 1; true; i++) {
-                    String customHostKey = "radius." + i + "." + filterName + ".host";
-                    String host = envValues.get(customHostKey);
-                    if (host == null) {
-                        break;
-                    }
-                    String customPortKey = "radius." + i + "." + filterName + ".port";
-                    String port = envValues.get(customPortKey);
-                    if (port == null) {
-                        port = "1812";
-                    }
-                    String radiusShorthandKey = shorthandKey + "/[RadiusServer]host=" + host + ",port=" + port;
-                    updatePasswordField(entityStore, radiusShorthandKey, "secret", passwordValue);
-                }
-            } else if (key.startsWith("cert_")) {
+            if (key.startsWith("cert_")) {
                 importCertificates(entityStore, passwordValue);
             } else if (key.startsWith("disablehttps_")) {
                 if (passwordValue.equalsIgnoreCase("true")) {
@@ -200,24 +182,11 @@ public class ExternalConfigLoader implements LoadableModule {
         }
 
         Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(httpBasic);
-        if (!httpBasicObjs.isEmpty()) {
-            for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
-                String filterName = entry.getKey();
-                Map<String, String> attributes = entry.getValue();
-                String password = attributes.get("password");
-                String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
-                updatePasswordField(entityStore, shorthandKey, "httpAuthPass", password);
-            }
-        }
+        updateHttpBasic(httpBasicObjs, entityStore);
 
         Map<String, Map<String, String>> ldapObjs = Util.parseCred(ldap);
-        if (!ldapObjs.isEmpty()) {
-            for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
-                String filterName = entry.getKey();
-                Map<String, String> attributes = entry.getValue();
-                updateLDAP(entityStore, attributes, filterName);
-            }
-        }
+        updateLDAP(entityStore, ldapObjs);
+
         Map<String, Map<String, String>> jmsObjs = Util.parseCred(jms);
         if (!jmsObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : jmsObjs.entrySet()) {
@@ -246,7 +215,29 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void importCertificates(EntityStore entityStore, String passwordValue) {
+    public void updateHttpBasic(Map<String, Map<String, String>> httpBasicObjs, EntityStore entityStore){
+        if (!httpBasicObjs.isEmpty()) {
+            for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
+                String filterName = entry.getKey();
+                Map<String, String> attributes = entry.getValue();
+                String password = attributes.get("password");
+                String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
+
+                Entity entity = getEntity(entityStore, shorthandKey);
+                if (entity == null) {
+                    Trace.error("Unable to find httpbasic auth profile :"+ filterName);
+                    return;
+                }
+                Trace.info("updating httpbasic profile password");
+                String base64Password = Base64.getEncoder().encodeToString(password.getBytes());
+                entity.setStringField("httpAuthPass", base64Password);
+                entityStore.updateEntity(entity);
+
+            }
+        }
+    }
+
+    public void importCertificates(EntityStore entityStore, String passwordValue) {
         try {
             List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
             for (X509Certificate certificate : certificates) {
@@ -264,16 +255,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private void updatePasswordField(EntityStore entityStore, String shorthandKey, String fieldName, String
-            value) {
-        Trace.info("updating password");
-        Entity entity = getEntity(entityStore, shorthandKey);
-        if (entity == null)
-            return;
-        value = Base64.getEncoder().encodeToString(value.getBytes());
-        entity.setStringField(fieldName, value);
-        entityStore.updateEntity(entity);
-    }
+
 
     public Entity getEntity(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
@@ -292,17 +274,24 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void updateLDAP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
-        Trace.info("updating LDAP");
-        Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
-        if (entity == null)
-            return;
-        setUsernameAndPassword(attributes, entity, "userName");
-        String url = attributes.get("url");
-        if (url != null) {
-            entity.setStringField("url", url);
+    public void updateLDAP(EntityStore entityStore, Map<String, Map<String, String>> ldapObjs) {
+        if (!ldapObjs.isEmpty()) {
+            for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
+                String filterName = entry.getKey();
+                Map<String, String> attributes = entry.getValue();
+                Trace.info("updating LDAP : "+ filterName);
+                Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
+                if (entity == null)
+                    return;
+                setUsernameAndPassword(attributes, entity, "userName");
+                String url = attributes.get("url");
+                if (url != null) {
+                    entity.setStringField("url", url);
+                }
+                entityStore.updateEntity(entity);
+            }
         }
-        entityStore.updateEntity(entity);
+
     }
 
     public void updateJMS(EntityStore entityStore, Map<String, String> attributes, String filterName) {
@@ -537,7 +526,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
+    public boolean jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
@@ -546,14 +535,14 @@ public class ExternalConfigLoader implements LoadableModule {
             shorthandKey = "/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
             entities = getEntities(entityStore, shorthandKey);
             if(entities.isEmpty())
-                return;
+                return false;
         }
 
         String fieldName = "publicKeyAlias";
         for (Entity entity : entities) {
             updateCertEntity(entityStore, entity, alias, fieldName, false);
         }
-
+        return true;
     }
 
     public void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
@@ -574,7 +563,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
-    private Entity getCertEntity(EntityStore entityStore, String alias) {
+    public Entity getCertEntity(EntityStore entityStore, String alias) {
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
@@ -583,7 +572,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
+    public PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
         PKCS12 pkcs12;
         File file = new File(cert);
