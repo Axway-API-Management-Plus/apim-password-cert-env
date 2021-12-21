@@ -1350,16 +1350,16 @@
 	<fval name="name"><value>Default Alert Configuration</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="EmailAlertSystem" entityPK="-2825425204594479511" parentPK="-642267143281983419">
-	<fval name="connectionType"><value>NONE</value></fval>
+	<fval name="connectionType"><value>TLS</value></fval>
 	<fval name="from"><value>no-reply@axway.com</value></fval>
 	<fval name="mailDebugOn"><value>false</value></fval>
 	<fval name="name"><value>API Manager Email Alerts</value></fval>
-	<fval name="password"><value></value></fval>
-	<fval name="port"><value>25</value></fval>
-	<fval name="smtp"><value>localhost</value></fval>
+	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
+	<fval name="port"><value>587</value></fval>
+	<fval name="smtp"><value>smtp.axway.com</value></fval>
 	<fval name="subject"><value>API Manager Alert</value></fval>
 	<fval name="to"><value>${alert.recipient.emails}</value></fval>
-	<fval name="username"><value></value></fval>
+	<fval name="username"><value>rnatarajan</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="DbConnectionGroup" entityPK="2212921243758863442" parentPK="0">
 	<fval name="name"><value>Database Connections</value></fval>
@@ -1429,8 +1429,8 @@
 	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
 	<fval name="sslCertificate"><value contentType="reference">-1</value></fval>
 	<fval name="sslEnabled"><value>0</value></fval>
-	<fval name="url"><value>ldap://ldaphost.sample.com:389</value></fval>
-	<fval name="userName"><value>cn=Administrator,cn=users,DC=sample,DC=com</value></fval>
+	<fval name="url"><value>ldap://localhost:389</value></fval>
+	<fval name="userName"><value>cn=test,dc=axway,dc=com</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="LdapDirectory" entityPK="8742188140404220931" parentPK="724154908628823018">
 	<fval name="authRealm"><value></value></fval>
@@ -1723,10 +1723,10 @@
 	<fval name="mq.sslFipsRequired"><value>false</value></fval>
 	<fval name="mq.transporType"><value>1</value></fval>
 	<fval name="name"><value>axway</value></fval>
-	<fval name="password"><value></value></fval>
-	<fval name="providerURL"><value>ssl://localhost:61200</value></fval>
+	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
+	<fval name="providerURL"><value>ssl://b-871f83a2-9d81-47ce-af1e-8fdc23775442-1.mq.us-east-2.amazonaws.com:61617</value></fval>
 	<fval name="serviceType"><value>ACTIVEMQ</value></fval>
-	<fval name="userName"><value></value></fval>
+	<fval name="userName"><value>axway</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="GSSInitiators" entityPK="1732804888927201087" parentPK="0">
 	<fval name="name"><value>GSS Initiators</value></fval>
@@ -1824,7 +1824,7 @@
 	<fval name="name"><value>Get Application Image</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="BasicProfile" entityPK="2287532469192987202" parentPK="7136354339622019279">
-	<fval name="httpAuthPass"><value>YXh3YXk=</value></fval>
+	<fval name="httpAuthPass"><value>Y2hhbmdlbWU=</value></fval>
 	<fval name="httpAuthType"><value>basic</value></fval>
 	<fval name="httpAuthUser"><value>apiadmin</value></fval>
 	<fval name="httpSendCredsWithoutPrompt"><value>1</value></fval>
@@ -1864,13 +1864,13 @@
 	<fval name="name"><value>SMTP Servers</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="SMTPServer" entityPK="3872439661133448425" parentPK="-2429854756871150792">
-	<fval name="connectionType"><value>NONE</value></fval>
+	<fval name="connectionType"><value>TLS</value></fval>
 	<fval name="mailDebugOn"><value>0</value></fval>
 	<fval name="name"><value>Portal SMTP</value></fval>
-	<fval name="password"><value></value></fval>
-	<fval name="smtpPort"><value>25</value></fval>
-	<fval name="smtpServer"><value>localhost</value></fval>
-	<fval name="username"><value></value></fval>
+	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
+	<fval name="smtpPort"><value>587</value></fval>
+	<fval name="smtpServer"><value>smtp.axway.com</value></fval>
+	<fval name="username"><value>rnatarajan</value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="XkmsConfigGroup" entityPK="6577826505009785865" parentPK="0">
 	<fval name="name"><value>XKMS Servers</value></fval>
@@ -1878,16 +1878,18 @@
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="CassandraSettings" entityPK="-3994509037857384037" parentPK="0">
 	<fval name="keySpace"><value>x${DOMAINID}_${GROUPID}</value></fval>
 	<fval name="name"><value>Cassandra Settings</value></fval>
-	<fval name="password"><value></value></fval>
+	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
 	<fval name="replication"><value>1</value></fval>
 	<fval name="replicationStrategy"><value>org.apache.cassandra.locator.SimpleStrategy</value></fval>
 	<fval name="sslProtocolOptionsMask"><value>1</value></fval>
+	<fval name="sslTrustedCerts"><value contentType="reference">
+<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='CN=Domain'/></key></key>	</value></fval>
 	<fval name="throttlingKeySpace"><value>t${DOMAINID}_${GROUPID}</value></fval>
 	<fval name="throttlingReadConsistencyLevel"><value>ONE</value></fval>
 	<fval name="throttlingReplication"><value>1</value></fval>
 	<fval name="throttlingReplicationStrategy"><value>org.apache.cassandra.locator.SimpleStrategy</value></fval>
 	<fval name="throttlingWriteConsistencyLevel"><value>ONE</value></fval>
-	<fval name="useSSL"><value>false</value></fval>
+	<fval name="useSSL"><value>1</value></fval>
 	<fval name="username"><value></value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="CassandraServer" entityPK="681928046139062645" parentPK="-3994509037857384037">
