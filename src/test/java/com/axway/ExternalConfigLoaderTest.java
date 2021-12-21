@@ -6,6 +6,7 @@ import com.vordel.es.EntityStoreFactory;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.es.xes.PortableESPK;
 import com.vordel.trace.Trace;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
@@ -160,6 +164,43 @@ public class ExternalConfigLoaderTest {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
         Assert.assertEquals("password", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("password"))));
+    }
+
+    @Test
+    public void testImportCertificates() throws FileNotFoundException, CertificateException {
+
+        String backendCertificate = "-----BEGIN CERTIFICATE-----\n" +
+            "MIIDRjCCAi6gAwIBAgIGAW5HwjW8MA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMM\n" +
+            "BkRvbWFpbjAgFw0xOTEwMzEyMTI1NDFaGA8yMTE5MTAxNDIxMjU0MVowQjEWMBQG\n" +
+            "CgmSJomT8ixkARkWBmhvc3QtMTEQMA4GA1UECwwHZ3JvdXAtMTEWMBQGA1UEAwwN\n" +
+            "bm9kZW1hbmFnZXItMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL8V\n" +
+            "Oqt5OKndTAlSHY1/LATaAdvUUPRrRvyh/BfBGWueQKoG2AQAUA5dN1B1MvPzPaaL\n" +
+            "FFYgfrckdmG47MFwkpyFgchl7IVkMhvJYy0Ku+aCoT0Gou9dkEKr9A5W9ZHzuWQM\n" +
+            "YRCSfIZqRednP9qFRTma185+jj7EaGiPuglkk8nplNeCbxhMBfGPewEuTBDPIOMw\n" +
+            "Ep7ChaRd07/mwmfKCjwh2C910wOg1qH+MEC+yjC3BwaNINAZtHd0lzJRji8Fjtrc\n" +
+            "DzTVZf0MF3E8QhW0x1kS/53BQCm6YMxjxUEgorDWrzrmyyanlICsBIASMtMWQQug\n" +
+            "P6qfEvj8WLH9VcGSQlMCAwEAAaNxMG8wCQYDVR0TBAIwADALBgNVHQ8EBAMCA7gw\n" +
+            "OwYDVR0lBDQwMgYIKwYBBQUHAwEGCCsGAQUFBwMCBg0rBgEEAYGMTgoBAQIBBg0r\n" +
+            "BgEEAYGMTgoBAQICMBgGA1UdEQQRMA+CB2FwaS1lbnaHBAqBPDkwDQYJKoZIhvcN\n" +
+            "AQELBQADggEBAFfGAtf5Rdn3EkPTsT5CcUo2+kgT3Er9y3D+SeyraM3UcwqR0+gb\n" +
+            "JHeLD6xnnkxbDIEr8ZvTL5BNqZad7Iu3mS7QVK7cBi9nHmr7HSzapD6ODli8whtn\n" +
+            "daElSKsO9EPAB04rVLIFZ5NIfWHLTDJSyFdvC5JFPuYxWluQwN+KOFJMjs7zVGvm\n" +
+            "MXO6WwSd0Q4+NlqgnvRl6viuo14M6Qu9TsidkZhdE+AIRPveYZm9J0FzanYOAoDf\n" +
+            "ZGIu5manaCW4XJKyZU/Kp04JR6ojQai65R/OLaFOxQhdZ9rtIN1DAsyTBp/6tqqC\n" +
+            "s2+QnHEKNi5n6eyF81l1X3AGOMp2uUF4CfU=\n" +
+            "-----END CERTIFICATE-----";
+
+        CertHelper certHelper = new CertHelper();
+        X509Certificate certificate = certHelper.parseX509(backendCertificate).get(0);
+        String alias = certificate.getSubjectDN().getName();
+        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
+
+        externalConfigLoader.importCertificates(entityStore, backendCertificate);
+        Entity entity = externalConfigLoader.getCertEntity(entityStore, escapedAlias);
+        logger.info("Entity : {}", entity);
+
+        Assert.assertNotNull(entity);
+
     }
 
     @Test

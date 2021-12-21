@@ -250,7 +250,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private void importCertificates(EntityStore entityStore, String passwordValue) {
+    public void importCertificates(EntityStore entityStore, String passwordValue) {
         try {
             List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
             for (X509Certificate certificate : certificates) {
@@ -578,7 +578,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     }
 
-    private Entity getCertEntity(EntityStore entityStore, String alias) {
+    public Entity getCertEntity(EntityStore entityStore, String alias) {
         String shorthandKey = "/[Certificates]name=Certificate Store";
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         Entity entity = shorthandKeyFinder.getEntity(shorthandKey);
