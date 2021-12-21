@@ -5,11 +5,9 @@ import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreFactory;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.es.xes.PortableESPK;
-import com.vordel.log.Log;
 import com.vordel.trace.Trace;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
@@ -32,9 +30,9 @@ import static org.powermock.api.mockito.PowerMockito.mockStatic;
 @PowerMockIgnore("javax.management.*")
 public class ExternalConfigLoaderTest {
 
-    private static Logger logger = LoggerFactory.getLogger(ExternalConfigLoaderTest.class);
+    final private static Logger logger = LoggerFactory.getLogger(ExternalConfigLoaderTest.class);
 
-    private ExternalConfigLoader externalConfigLoader = new ExternalConfigLoader();
+    final private ExternalConfigLoader externalConfigLoader = new ExternalConfigLoader();
     private EntityStore entityStore;
 
 
@@ -58,7 +56,7 @@ public class ExternalConfigLoaderTest {
         externalConfigLoader.disableInterface(entityStore, filterName, interfaceType );
         String shorthandKey = "/[NetService]name=Service/[HTTP]**/[" + interfaceType + "]name=" + filterName;
         Entity entity = externalConfigLoader.getEntities(entityStore, shorthandKey).get(0);
-        Assert.assertEquals("enabled", false, entity.getBooleanValue("enabled"));
+        Assert.assertFalse(entity.getBooleanValue("enabled"));
 
     }
 
@@ -68,7 +66,7 @@ public class ExternalConfigLoaderTest {
         externalConfigLoader.disableCassandraSSL(entityStore);
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
-        Assert.assertEquals("Disable cassandra SSL", false, entity.getBooleanValue("useSSL"));
+        Assert.assertFalse(entity.getBooleanValue("useSSL"));
     }
 
 
@@ -108,6 +106,7 @@ public class ExternalConfigLoaderTest {
         Field field = env.getClass().getDeclaredField("m");
         field.setAccessible(true);
         Map<String, String> envVars = (Map<String, String>) field.get(env);
+        envVars.clear();
         envVars.putAll(inputParams);
     }
 
@@ -192,7 +191,7 @@ public class ExternalConfigLoaderTest {
         entityStore.updateEntity(entity);
         externalConfigLoader.updatePassword(entityStore);
         entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
-        Assert.assertEquals("sslTrustedCerts", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("sslTrustedCerts").getValueList().get(0).getRef()).toShorthandString());
+        Assert.assertEquals("sslTrustedCerts", "/[Certificates]name=Certificate Store/[Certificate]dname=CN=Domain", ((PortableESPK)entity.getField("sslTrustedCerts").getValueList().get(0).getRef()).toShorthandString());
 
     }
 
