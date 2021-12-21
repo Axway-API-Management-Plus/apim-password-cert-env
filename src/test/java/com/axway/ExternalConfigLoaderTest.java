@@ -6,7 +6,7 @@ import com.vordel.es.EntityStoreFactory;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.es.xes.PortableESPK;
 import com.vordel.trace.Trace;
-import org.checkerframework.checker.units.qual.C;
+import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -44,12 +45,23 @@ public class ExternalConfigLoaderTest {
     public void testUpdateHttpBasic(){
         String filterName = "apimanager";
         Map<String, String> attributes = new HashMap<>();
-        attributes.put("httpbasic_apimanager_password","changeme");
+        attributes.put("httpbasic_"+ filterName + "_password","changeme");
         Map<String, Map<String, String>> httpBasicObjs = Util.parseCred(attributes);
         externalConfigLoader.updateHttpBasic(httpBasicObjs,entityStore);
         String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
         Assert.assertEquals("httpAuthPass", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("httpAuthPass"))));
+    }
+
+    @Test
+    public void importP12Test() throws Exception {
+        File file = new File(ClassLoader.getSystemResource("test.p12").getFile());
+        String content = Base64.getEncoder().encodeToString(FileUtils.readFileToByteArray(file));
+        PKCS12 pkcs12 = externalConfigLoader.importP12(entityStore, content, "changeit".toCharArray());
+        String escapedAlias = ShorthandKeyFinder.escapeFieldValue(pkcs12.getAlias());
+        Entity entity = externalConfigLoader.getCertEntity(entityStore, escapedAlias);
+        Assert.assertNotNull(entity);
+
     }
 
     @Test
@@ -78,10 +90,11 @@ public class ExternalConfigLoaderTest {
     public void testUpdateLDAP(){
         String ldapConnectionName = "axway";
         Map<String, String> attributes = new HashMap<>();
-        attributes.put("url","ldap://localhost:389");
-        attributes.put("username","cn=test,dc=axway,dc=com");
-        attributes.put("password","changeme");
-        externalConfigLoader.updateLDAP(entityStore, attributes, ldapConnectionName);
+        attributes.put("ldap_"+ ldapConnectionName +"_url","ldap://localhost:389");
+        attributes.put("ldap_"+ ldapConnectionName +"_username","cn=test,dc=axway,dc=com");
+        attributes.put("ldap_"+ ldapConnectionName + "_password","changeme");
+        Map<String, Map<String, String>> ldapObjs = Util.parseCred(attributes);
+        externalConfigLoader.updateLDAP(entityStore, ldapObjs);
         String shorthandKey = "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + ldapConnectionName;
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
         Assert.assertEquals("url", "ldap://localhost:389", entity.getStringValue("url"));

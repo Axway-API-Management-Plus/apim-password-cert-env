@@ -185,13 +185,8 @@ public class ExternalConfigLoader implements LoadableModule {
         updateHttpBasic(httpBasicObjs, entityStore);
 
         Map<String, Map<String, String>> ldapObjs = Util.parseCred(ldap);
-        if (!ldapObjs.isEmpty()) {
-            for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
-                String filterName = entry.getKey();
-                Map<String, String> attributes = entry.getValue();
-                updateLDAP(entityStore, attributes, filterName);
-            }
-        }
+        updateLDAP(entityStore, ldapObjs);
+
         Map<String, Map<String, String>> jmsObjs = Util.parseCred(jms);
         if (!jmsObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : jmsObjs.entrySet()) {
@@ -279,17 +274,24 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void updateLDAP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
-        Trace.info("updating LDAP");
-        Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
-        if (entity == null)
-            return;
-        setUsernameAndPassword(attributes, entity, "userName");
-        String url = attributes.get("url");
-        if (url != null) {
-            entity.setStringField("url", url);
+    public void updateLDAP(EntityStore entityStore, Map<String, Map<String, String>> ldapObjs) {
+        if (!ldapObjs.isEmpty()) {
+            for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
+                String filterName = entry.getKey();
+                Map<String, String> attributes = entry.getValue();
+                Trace.info("updating LDAP : "+ filterName);
+                Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
+                if (entity == null)
+                    return;
+                setUsernameAndPassword(attributes, entity, "userName");
+                String url = attributes.get("url");
+                if (url != null) {
+                    entity.setStringField("url", url);
+                }
+                entityStore.updateEntity(entity);
+            }
         }
-        entityStore.updateEntity(entity);
+
     }
 
     public void updateJMS(EntityStore entityStore, Map<String, String> attributes, String filterName) {
@@ -524,7 +526,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
+    public boolean jwtVerifyConfigureCertificate(EntityStore entityStore, String name, String alias) {
 
         String shorthandKey = "/[CircuitContainer]**/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
         List<Entity> entities = getEntities(entityStore, shorthandKey);
@@ -533,14 +535,14 @@ public class ExternalConfigLoader implements LoadableModule {
             shorthandKey = "/[FilterCircuit]**/[JWTVerifyFilter]name=" + name;
             entities = getEntities(entityStore, shorthandKey);
             if(entities.isEmpty())
-                return;
+                return false;
         }
 
         String fieldName = "publicKeyAlias";
         for (Entity entity : entities) {
             updateCertEntity(entityStore, entity, alias, fieldName, false);
         }
-
+        return true;
     }
 
     public void jwtSignConfigureP12(EntityStore entityStore, String name, String alias) {
@@ -570,7 +572,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    private PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
+    public PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
 
         PKCS12 pkcs12;
         File file = new File(cert);

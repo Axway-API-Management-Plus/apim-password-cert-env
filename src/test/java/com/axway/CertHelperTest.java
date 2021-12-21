@@ -23,8 +23,9 @@ public class CertHelperTest {
     public void testP12File() {
         try {
             PKCS12 pkcs12 = certHelper.parseP12(new File(ClassLoader.getSystemResource("certificate.p12").getFile()), "changeit".toCharArray());
+            System.out.println(pkcs12.getAlias());
+            Assert.assertNotNull(pkcs12);
             // System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
-            System.out.println(pkcs12.getPrivateKey().getFormat());
         } catch (KeyStoreException | NoSuchAlgorithmException | IOException | CertificateException | UnrecoverableKeyException e) {
             Assert.fail(e.getMessage());
         }
@@ -34,11 +35,12 @@ public class CertHelperTest {
     public void testP12Content() {
         try {
 
-            File file = new File(ClassLoader.getSystemResource("certificate.p12").getFile());
+            File file = new File(ClassLoader.getSystemResource("test.p12").getFile());
             String content = Base64.getEncoder().encodeToString(FileUtils.readFileToByteArray(file));
             PKCS12 pkcs12 = certHelper.parseP12(content, "changeit".toCharArray());
-            // System.out.println(pkcs12.getCertificate().getPublicKey().getFormat());
-            System.out.println(pkcs12.getPrivateKey().getFormat());
+            Assert.assertNotNull(pkcs12);
+            Assert.assertEquals("cn=change this for production", pkcs12.getAlias());
+
         } catch (KeyStoreException | NoSuchAlgorithmException | IOException | CertificateException | UnrecoverableKeyException e) {
             Assert.fail(e.getMessage());
         }
