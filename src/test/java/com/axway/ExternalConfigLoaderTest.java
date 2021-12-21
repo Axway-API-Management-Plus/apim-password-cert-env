@@ -47,7 +47,7 @@ public class ExternalConfigLoaderTest {
         externalConfigLoader.updateHttpBasic(httpBasicObjs,entityStore);
         String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
-        Assert.assertEquals("httpAuthPass", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("password"))));
+        Assert.assertEquals("httpAuthPass", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("httpAuthPass"))));
     }
 
     @Test
@@ -186,9 +186,12 @@ public class ExternalConfigLoaderTest {
             "-----END CERTIFICATE-----";
         envVars.put("cassandraCert_root", certificate);
         setupEnvVariables(envVars);
-        externalConfigLoader.updatePassword(entityStore);
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+        entity.setBooleanField("useSSL", true);
+        entityStore.updateEntity(entity);
+        externalConfigLoader.updatePassword(entityStore);
+        entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
         Assert.assertEquals("sslTrustedCerts", "/[Certificates]name=Certificate Store/[Certificate]dname=alias-test", ((PortableESPK)entity.getField("sslTrustedCerts").getValueList().get(0).getRef()).toShorthandString());
 
     }
