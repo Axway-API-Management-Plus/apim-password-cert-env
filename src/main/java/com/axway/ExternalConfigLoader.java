@@ -96,7 +96,9 @@ public class ExternalConfigLoader implements LoadableModule {
                     String mTLS = System.getenv("certandkeymtls" + "_" + filterName);
                     PKCS12 pkcs12 = importP12(entityStore, passwordValue, password);
                     Trace.info("P12 file alias name :" + pkcs12.getAlias());
-                    configureP12(entityStore, filterName, pkcs12, mTLS);
+                    if(!filterName.equalsIgnoreCase("certstore")) {
+                        configureP12(entityStore, filterName, pkcs12, mTLS);
+                    }
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
