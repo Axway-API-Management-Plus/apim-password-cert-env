@@ -634,6 +634,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
         PKCS12 pkcs12 = new PKCS12();
         List<X509Certificate> caCerts = new ArrayList<>();
+        Trace.info("ca cert "+ca);
         if (ca != null) {
             caCerts = certHelper.parseX509(ca);
         }

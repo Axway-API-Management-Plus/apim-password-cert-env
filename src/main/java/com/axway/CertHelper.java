@@ -1,6 +1,7 @@
 package com.axway;
 
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -68,6 +69,9 @@ public class CertHelper {
                 PEMKeyPair pemKeyPair = (PEMKeyPair) pemContent;
                 KeyPair keyPair = jcaPEMKeyConverter.getKeyPair(pemKeyPair);
                 return keyPair.getPrivate();
+            }else if(pemContent instanceof PrivateKeyInfo){
+                PrivateKeyInfo privateKeyInfo = (PrivateKeyInfo) pemContent;
+                return jcaPEMKeyConverter.getPrivateKey(privateKeyInfo);
             }
             return null;
         } finally {

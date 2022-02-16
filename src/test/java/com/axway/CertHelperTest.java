@@ -179,5 +179,22 @@ public class CertHelperTest {
         }
     }
 
+    @Test
+    public void testNonRSAPrivateKey() {
+
+
+        try {
+
+            PrivateKey privateKey = certHelper.parsePrivateKey("src/test/resources/privkey.pem");
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
 }
