@@ -57,32 +57,35 @@ environment:
 
 ## Following fields  does not support **environment** prefix which are handled by this project.
 
-|environment variable Name | Filter / Connection  Name | Description|
---- | --- | ---
-|ldap_connectionname_password|Configure LDAP Server|Enables environmentalization of **Password** field **connectionname** - Name used in Configure LDAP server and it should not contain blank spaces [Refer](#example)|
-|ldap_connectionname_username|Configure LDAP Server|Enables environmentalization of **Username** field [Refer](#example)|
-|ldap_connectionname_url|Configure LDAP Server|Enable environmentalization of **Provider URL** field [Refer](#example)|
-|jms_servicename_password|JMS Service|Enables environmentalization of **Password** field|
-|jms_servicename_username|JMS Service|Enables environmentalization of **Username** field|
-|jms_servicename_url|JMS Service|Enables environmentalization of **Provider URL** field|
-|smtp_manager_password|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Password** field|
-|smtp_manager_username|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **Username** field|
-|smtp_manager_url|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Hostname** field|
-|smtp_manager_port|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Port** field|
-|smtp_manager_connectionType|SMTP Server|Enables environmentalization of API manager SMTP and Alert Email **SMTP Connection Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE** |
-|smtp_servername_password|SMTP Server|Enables environmentalization of **Password** field|
-|smtp_servername_username|SMTP Server|Enables environmentalization of **Username** field|
-|smtp_servername_url|SMTP Server|Enables environmentalization of **SMTP Server Hostname** field|
-|smtp_servername_port|SMTP Server|Enables environmentalization of **SMTP Server Port** field|
-|smtp_servername_connectionType|SMTP Server|Enables environmentalization of **SMTP Server Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE** |
-|httpbasic_profilename_password|Client Authentication - Http Basic|Enables environmentalization of **Password** field|
-|disablehttps_portname|Client Authentication - Http Basic|Disables HTTPS Listener Interface, possible values true and false|
-|disablehttp_portname|Client Authentication - Http Basic|Disables HTTP Listener Interface, possible values true and false|
-|cassandra_password|Cassandra Connection|Cassandra server password|
-|cassandra_disablessl|Cassandra Connection|Disables Cassandra SSL connection, possible values true and false [Refer](#cassandra)|
-|cassandraconsistency_readlevel| Cassandra Read Consistency level | Updates cassandra read consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
-|cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)|
-|cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer](#cassandra)|
+|environment variable Name | Filter / Connection  Name | Description                                                                                                                                                                                           |
+--- | --- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|ldap_connectionname_password|Configure LDAP Server| Enables environmentalization of **Password** field **connectionname** - Name used in Configure LDAP server and it should not contain blank spaces [Refer](#example)                                   |
+|ldap_connectionname_username|Configure LDAP Server| Enables environmentalization of **Username** field [Refer](#example)                                                                                                                                  |
+|ldap_connectionname_url|Configure LDAP Server| Enable environmentalization of **Provider URL** field [Refer](#example)                                                                                                                               |
+|jms_servicename_password|JMS Service| Enables environmentalization of **Password** field                                                                                                                                                    |
+|jms_servicename_username|JMS Service| Enables environmentalization of **Username** field                                                                                                                                                    |
+|jms_servicename_url|JMS Service| Enables environmentalization of **Provider URL** field                                                                                                                                                |
+|smtp_manager_password|SMTP Server| Enables environmentalization of API manager SMTP and Alert Email **Password** field                                                                                                                   |
+|smtp_manager_username|SMTP Server| Enables environmentalization of API manager SMTP and Alert Email **Username** field                                                                                                                   |
+|smtp_manager_url|SMTP Server| Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Hostname** field                                                                                                       |
+|smtp_manager_port|SMTP Server| Enables environmentalization of API manager SMTP and Alert Email **SMTP Server Port** field                                                                                                           |
+|smtp_manager_connectionType|SMTP Server| Enables environmentalization of API manager SMTP and Alert Email **SMTP Connection Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE**                            |
+|smtp_servername_password|SMTP Server| Enables environmentalization of **Password** field                                                                                                                                                    |
+|smtp_servername_username|SMTP Server| Enables environmentalization of **Username** field                                                                                                                                                    |
+|smtp_servername_url|SMTP Server| Enables environmentalization of **SMTP Server Hostname** field                                                                                                                                        |
+|smtp_servername_port|SMTP Server| Enables environmentalization of **SMTP Server Port** field                                                                                                                                            |
+|smtp_servername_connectionType|SMTP Server| Enables environmentalization of **SMTP Server Connection Security** field, possible values **NONE, SSL, TLS**, default value **NONE**                                                                 |
+|httpbasic_profilename_password|Client Authentication - Http Basic| Enables environmentalization of **Password** field                                                                                                                                                    |
+|disablehttps_portname|Client Authentication - Http Basic| Disables HTTPS Listener Interface, possible values true and false                                                                                                                                     |
+|disablehttp_portname|Client Authentication - Http Basic| Disables HTTP Listener Interface, possible values true and false                                                                                                                                      |
+|cassandra_password|Cassandra Connection| Cassandra server password                                                                                                                                                                             |
+|cassandra_disablessl|Cassandra Connection| Disables Cassandra SSL connection, possible values true and false [Refer](#cassandra)                                                                                                                 |
+|cassandraconsistency_readlevel| Cassandra Read Consistency level | Updates cassandra read consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra)  |
+|cassandraconsistency_writelevel| Cassandra Write Consistency level | Updates cassandra write consistency level of KPS, Quota, Throttling and Oauth2 Store, Possible consistency level are **ONE, TWO, THREE, QUORUM, LOCAL_QUORUM, LOCAL_ONE and ALL** [Refer](#cassandra) |
+|cassandraCert_root| Cassandra Connection | Enables environmentalization of certificate based authentication [Refer](#cassandra)                                                                                                                  |
+|cassandra_private_key| Cassandra Connection | Enables environmentalization of Cassandra Client authentication [Refer](#cassandra)                                                                                                                   |
+|cassandra_public_key| Cassandra Connection | Enables environmentalization of Cassandra Client authentication [Refer](#cassandra)                                                                                                                  |
+
 |cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
 |jwtverifycert_name| JWT Verify | Enables environmentalization of certificate to verify JWT signature |
 
@@ -240,7 +243,12 @@ PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6
 6Xi8yAoGAN92VRi93iss3A7zoAsrPXCO7pNZdz3QzJ3Jjv9KW48DmQ==
 -----END CERTIFICATE-----" 
 ## Use file path - file should be created via config map / mount
-$export cassandraCert_root = /opt/Axway/apigateway/certs/cassandra.pem
+$export cassandraCert_root = /opt/Axway/apigateway/certs/ca.pem
+
+## Client authentication 
+
+$export cassandra_private_key = /opt/Axway/apigateway/certs/cassandra.key
+$export cassandra_public_key = /opt/Axway/apigateway/certs/cassandra.pem
 ```
 
 
