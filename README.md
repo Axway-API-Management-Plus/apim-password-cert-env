@@ -242,7 +242,9 @@ yRw3ffr/trqh2B5tzwJMnWsakRwAtooRJ2RZ8ufQUhEYdI/7KJajZDQ0IFxleyPZ
 PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6
 6Xi8yAoGAN92VRi93iss3A7zoAsrPXCO7pNZdz3QzJ3Jjv9KW48DmQ==
 -----END CERTIFICATE-----" 
+
 ## Use file path - file should be created via config map / mount
+## Certificate Authentication 
 $export cassandraCert_root = /opt/Axway/apigateway/certs/ca.pem
 
 ## Client authentication 
