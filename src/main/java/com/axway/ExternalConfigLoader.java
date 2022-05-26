@@ -234,10 +234,10 @@ public class ExternalConfigLoader implements LoadableModule {
 
                 Entity entity = getEntity(entityStore, shorthandKey);
                 if (entity == null) {
-                    Trace.error("Unable to find httpbasic auth profile :"+ filterName);
+                    Trace.error("Unable to find HttpBasic auth profile :"+ filterName);
                     return;
                 }
-                Trace.info("updating httpbasic profile password");
+                Trace.info("updating HttpBasic profile password");
                 String base64Password = Base64.getEncoder().encodeToString(password.getBytes());
                 entity.setStringField("httpAuthPass", base64Password);
                 entityStore.updateEntity(entity);
@@ -530,13 +530,12 @@ public class ExternalConfigLoader implements LoadableModule {
             List<Value> values = field.getValueList();
             List<Value> cloneVales = new ArrayList<>(values);
             for (Value value : cloneVales) {
-                PortableESPK espk = (PortableESPK) value.getRef();
-                String certStoreDistinguishedName = espk.getFieldValueOfReferencedEntity("dname");
+                PortableESPK valueRef = (PortableESPK) value.getRef();
+                String certStoreDistinguishedName = valueRef.getFieldValueOfReferencedEntity("dname");
                 Trace.info(" alias name from Gateway Cert store :" + certStoreDistinguishedName);
                 if (certStoreDistinguishedName.equals(alias)) {
                     Trace.info("Removing existing cert as it matches the current cert" + alias);
                     values.remove(value);
-                    continue;
                 }
             }
             Trace.info("adding " + alias);
@@ -629,7 +628,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
         // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
-            //Updates the existing certificate in the certstore
+            //Updates the existing certificate in the certStore
             Trace.info("Updating existing certificate");
             for (int i = 0; i < certificates.length; i++) {
                 if (i == 0) {
@@ -695,7 +694,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
         // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
-            //Updates the existing certificate in the certstore
+            //Updates the existing certificate in the certStore
             Trace.info("Updating existing certificate");
             certEntity.setBinaryValue("content", certObj.getEncoded());
             String keyStr = Base64.getEncoder().encodeToString(privateKey.getEncoded());
