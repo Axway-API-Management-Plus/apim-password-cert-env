@@ -4,6 +4,7 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final  class  Util {
 
@@ -30,6 +31,13 @@ public final  class  Util {
             }
         }
         return values;
+    }
+
+    public static Map<String, String> groupEnvVariables(Map<String, String> envValues, String namePrefix) {
+        return envValues.entrySet()
+            .stream()
+            .filter(map -> map.getKey().startsWith(namePrefix))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public static String getAliasName(X509Certificate certificate){

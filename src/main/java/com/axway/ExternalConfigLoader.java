@@ -47,11 +47,11 @@ public class ExternalConfigLoader implements LoadableModule {
         Map<String, String> envValues = System.getenv();
         Set<String> keys = envValues.keySet();
         Iterator<String> keysIterator = keys.iterator();
-        Map<String, String> ldap = groupEnvVariables(envValues, "ldap_");
-        Map<String, String> jms = groupEnvVariables(envValues, "jms_");
-        Map<String, String> smtp = groupEnvVariables(envValues, "smtp_");
-        Map<String, String> httpBasic = groupEnvVariables(envValues, "httpbasic_");
-        Map<String, String> cassandraConsistency = groupEnvVariables(envValues, "cassandraconsistency_");
+        Map<String, String> ldap = Util.groupEnvVariables(envValues, "ldap_");
+        Map<String, String> jms = Util.groupEnvVariables(envValues, "jms_");
+        Map<String, String> smtp = Util.groupEnvVariables(envValues, "smtp_");
+        Map<String, String> httpBasic = Util.groupEnvVariables(envValues, "httpbasic_");
+        Map<String, String> cassandraConsistency = Util.groupEnvVariables(envValues, "cassandraconsistency_");
 
         while (keysIterator.hasNext()) {
             String key = keysIterator.next();
@@ -257,15 +257,6 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    private Map<String, String> groupEnvVariables(Map<String, String> envValues, String namePrefix) {
-        return envValues.entrySet()
-                .stream()
-                .filter(map -> map.getKey().startsWith(namePrefix))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-
-
     public Entity getEntity(EntityStore entityStore, String shorthandKey) {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         return shorthandKeyFinder.getEntity(shorthandKey);
@@ -382,13 +373,10 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-
-
     public void updateCassandraCertAndKey(EntityStore entityStore, String clientAuthAlias, Certificate[] certificates) {
-        Entity entity = getCassandraEntity(entityStore);
+        Entity entity = getEntity(entityStore, "/[CassandraSettings]name=Cassandra Settings");
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
-
             String clientAuth = "sslCertificate";
             updateCertEntity(entityStore, entity, clientAuthAlias, clientAuth, false);
             String filedName = "sslTrustedCerts";
@@ -404,13 +392,8 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public Entity  getCassandraEntity(EntityStore entityStore){
-        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        return getEntity(entityStore, shorthandKey);
-    }
-
     public void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
-        Entity entity = getCassandraEntity(entityStore);
+        Entity entity = getEntity(entityStore, "/[CassandraSettings]name=Cassandra Settings");
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
             String filedName = "sslTrustedCerts";
@@ -576,7 +559,6 @@ public class ExternalConfigLoader implements LoadableModule {
             if(entities.isEmpty())
                 return false;
         }
-
         String fieldName = "publicKeyAlias";
         for (Entity entity : entities) {
             updateCertEntity(entityStore, entity, alias, fieldName, false);
@@ -599,7 +581,6 @@ public class ExternalConfigLoader implements LoadableModule {
         for (Entity entity : entities) {
             updateCertEntity(entityStore, entity, alias, fieldName, false);
         }
-
     }
 
     public Entity getCertEntity(EntityStore entityStore, String alias) {
@@ -769,6 +750,4 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
     }
-
-
 }
