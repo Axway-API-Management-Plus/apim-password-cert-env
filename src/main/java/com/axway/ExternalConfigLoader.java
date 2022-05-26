@@ -72,21 +72,28 @@ public class ExternalConfigLoader implements LoadableModule {
                     disableInterface(entityStore, filterName, "InetInterface");
                 }
             } else if (key.equalsIgnoreCase("cassandra_disablessl")) {
-                if (passwordValue.equalsIgnoreCase("true")) {
-                    disableCassandraSSL(entityStore);
-                }
+                disableCassandraSSL(entityStore, passwordValue);
             } else if (key.startsWith("cassandraCert")) {
                 try {
-                    List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
-                    int index = 0;
-                    for (X509Certificate certificate : certificates) {
-                        String alias = importPublicCertificate(certificate, entityStore);
-                        if (alias != null) {
-                            updateCassandraCert(entityStore, alias, index != 0);
-                            index++;
+                    String pemKey = System.getenv("cassandra_private_key");
+                    String publicKey = System.getenv("cassandra_public_key");
+                    if( pemKey != null && publicKey != null) {
+                        PKCS12 pkcs12 = importCertAndKeyAndCA(entityStore, publicKey, passwordValue, pemKey, null);
+                        Trace.info("Pem file alias name :" + pkcs12.getAlias());
+                        updateCassandraCertAndKey(entityStore, pkcs12.getAlias(), pkcs12.getCertificates());
+                    }else {
+                        List<X509Certificate> certificates = certHelper.parseX509(passwordValue);
+
+                        int index = 0;
+                        for (X509Certificate certificate : certificates) {
+                            String alias = importPublicCertificate(certificate, entityStore);
+                            if (alias != null) {
+                                updateCassandraCert(entityStore, alias, index != 0);
+                                index++;
+                            }
                         }
                     }
-                } catch (CertificateException | FileNotFoundException e) {
+                } catch (Exception e) {
                     Trace.error("Unable to add Cassandra certificate from Environment variable", e);
                 }
             } else if (key.startsWith("certandkey_")) {
@@ -375,9 +382,35 @@ public class ExternalConfigLoader implements LoadableModule {
         entityStore.updateEntity(entity);
     }
 
-    public void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
+
+
+    public void updateCassandraCertAndKey(EntityStore entityStore, String clientAuthAlias, Certificate[] certificates) {
+        Entity entity = getCassandraEntity(entityStore);
+        boolean useSSL = entity.getBooleanValue("useSSL");
+        if (useSSL) {
+
+            String clientAuth = "sslCertificate";
+            updateCertEntity(entityStore, entity, clientAuthAlias, clientAuth, false);
+            String filedName = "sslTrustedCerts";
+
+            if( certificates.length > 1){
+                // Start from 1 To ignore public key associated with private key
+                for (int i = 1; i < certificates.length; i++) {
+                    Certificate certificate = certificates[i];
+                    String alias = Util.getAliasName((X509Certificate) certificate);
+                    updateCertEntity(entityStore, entity, alias, filedName, true);
+                }
+            }
+        }
+    }
+
+    public Entity  getCassandraEntity(EntityStore entityStore){
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        Entity entity = getEntity(entityStore, shorthandKey);
+        return getEntity(entityStore, shorthandKey);
+    }
+
+    public void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
+        Entity entity = getCassandraEntity(entityStore);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
             String filedName = "sslTrustedCerts";
@@ -385,12 +418,16 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void disableCassandraSSL(EntityStore entityStore) {
+    public void disableCassandraSSL(EntityStore entityStore, String value) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
-        entity.setBooleanField("useSSL", false);
+        boolean boolValue = Boolean.parseBoolean(value);
+        entity.setBooleanField("useSSL", !boolValue);
         entityStore.updateEntity(entity);
-        Trace.info("Disabled Cassandra SSL");
+        if(!boolValue)
+            Trace.info("Disabled Cassandra SSL");
+        else
+            Trace.info("Enabled Cassandra SSL");
     }
 
     // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
@@ -415,7 +452,6 @@ public class ExternalConfigLoader implements LoadableModule {
             String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
             Entity certEntity = getCertEntity(entityStore, escapedAlias);
             Trace.info("Alias :" + alias + "Escaped alias :" + escapedAlias);
-
             if (certEntity == null) {
                 Trace.info("Adding cert");
                 certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
@@ -498,14 +534,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 String certStoreDistinguishedName = espk.getFieldValueOfReferencedEntity("dname");
                 Trace.info(" alias name from Gateway Cert store :" + certStoreDistinguishedName);
                 if (certStoreDistinguishedName.equals(alias)) {
-                    Trace.info("Removing existing certs" + alias);
+                    Trace.info("Removing existing cert as it matches the current cert" + alias);
                     values.remove(value);
+                    continue;
                 }
-                Trace.info("adding " + alias);
-                values.add(new Value(portableESPK));
             }
+            Trace.info("adding " + alias);
+            values.add(new Value(portableESPK));
             field.setValues(values);
         } else {
+            Trace.debug("Replacing exising cert reference");
             entity.setReferenceField(fieldName, portableESPK);
         }
         entityStore.updateEntity(entity);

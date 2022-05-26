@@ -1881,6 +1881,8 @@
 	<fval name="password"><value>Y2hhbmdlbWU=</value></fval>
 	<fval name="replication"><value>1</value></fval>
 	<fval name="replicationStrategy"><value>org.apache.cassandra.locator.SimpleStrategy</value></fval>
+	<fval name="sslCertificate"><value contentType="reference">
+<key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='213910179734667807042092962809881497910'/></key></key>	</value></fval>
 	<fval name="sslProtocolOptionsMask"><value>1</value></fval>
 	<fval name="sslTrustedCerts"><value contentType="reference">
 <key type='Certificates'><id field='name' value='Certificate Store'/><key type='Certificate'><id field='dname' value='CN=Domain'/></key></key>	</value></fval>
@@ -1889,7 +1891,7 @@
 	<fval name="throttlingReplication"><value>1</value></fval>
 	<fval name="throttlingReplicationStrategy"><value>org.apache.cassandra.locator.SimpleStrategy</value></fval>
 	<fval name="throttlingWriteConsistencyLevel"><value>ONE</value></fval>
-	<fval name="useSSL"><value>1</value></fval>
+	<fval name="useSSL"><value>0</value></fval>
 	<fval name="username"><value></value></fval>
 </entity>
 <entity xmlns="http://www.vordel.com/2005/06/24/entityStore"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="CassandraServer" entityPK="681928046139062645" parentPK="-3994509037857384037">

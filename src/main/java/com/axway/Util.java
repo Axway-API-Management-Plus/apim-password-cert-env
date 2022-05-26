@@ -1,5 +1,6 @@
 package com.axway;
 
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,5 +30,15 @@ public final  class  Util {
             }
         }
         return values;
+    }
+
+    public static String getAliasName(X509Certificate certificate){
+
+
+        String alias = certificate.getSubjectDN().getName();
+        if (alias.equals("")) {
+            alias = certificate.getSerialNumber().toString();
+        }
+        return alias;
     }
 }
