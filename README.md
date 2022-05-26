@@ -85,8 +85,7 @@ environment:
 | cassandraCert_root              | Cassandra Connection               | Enables environmentalization of certificate based authentication [Refer](#cassandra)                                                                                                                  |
 | cassandra_private_key           | Cassandra Connection               | Enables environmentalization of Cassandra Client authentication [Refer](#cassandra)                                                                                                                   |
 | cassandra_public_key            | Cassandra Connection               | Enables environmentalization of Cassandra Client authentication [Refer](#cassandra)                                                                                                                   |
-
-|cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)|
+|cert_name| Connect to URL | Enables environmentalization of One way SSL authentication **name** refers to an alias / unique name of certificate [Refer](#connect-to-url)     |
 |jwtverifycert_name| JWT Verify | Enables environmentalization of certificate to verify JWT signature |
 
 
