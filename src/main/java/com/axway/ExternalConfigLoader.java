@@ -72,9 +72,7 @@ public class ExternalConfigLoader implements LoadableModule {
                     disableInterface(entityStore, filterName, "InetInterface");
                 }
             } else if (key.equalsIgnoreCase("cassandra_disablessl")) {
-                if (passwordValue.equalsIgnoreCase("true")) {
-                    disableCassandraSSL(entityStore);
-                }
+                disableCassandraSSL(entityStore, passwordValue);
             } else if (key.startsWith("cassandraCert")) {
                 try {
                     String pemKey = System.getenv("cassandra_private_key");
@@ -390,16 +388,17 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity entity = getCassandraEntity(entityStore);
         boolean useSSL = entity.getBooleanValue("useSSL");
         if (useSSL) {
+
             String clientAuth = "sslCertificate";
             updateCertEntity(entityStore, entity, clientAuthAlias, clientAuth, false);
             String filedName = "sslTrustedCerts";
+
             if( certificates.length > 1){
                 // Start from 1 To ignore public key associated with private key
                 for (int i = 1; i < certificates.length; i++) {
                     Certificate certificate = certificates[i];
                     String alias = Util.getAliasName((X509Certificate) certificate);
-                    String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
-                    updateCertEntity(entityStore, entity, escapedAlias, filedName, true);
+                    updateCertEntity(entityStore, entity, alias, filedName, true);
                 }
             }
         }
@@ -419,12 +418,16 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void disableCassandraSSL(EntityStore entityStore) {
+    public void disableCassandraSSL(EntityStore entityStore, String value) {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
-        entity.setBooleanField("useSSL", false);
+        boolean boolValue = Boolean.parseBoolean(value);
+        entity.setBooleanField("useSSL", !boolValue);
         entityStore.updateEntity(entity);
-        Trace.info("Disabled Cassandra SSL");
+        if(!boolValue)
+            Trace.info("Disabled Cassandra SSL");
+        else
+            Trace.info("Enabled Cassandra SSL");
     }
 
     // Supports both HTTP and HTTPS interfaces where interfaceType are InetInterface, SSLInterface
@@ -449,7 +452,6 @@ public class ExternalConfigLoader implements LoadableModule {
             String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
             Entity certEntity = getCertEntity(entityStore, escapedAlias);
             Trace.info("Alias :" + alias + "Escaped alias :" + escapedAlias);
-
             if (certEntity == null) {
                 Trace.info("Adding cert");
                 certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
@@ -532,14 +534,16 @@ public class ExternalConfigLoader implements LoadableModule {
                 String certStoreDistinguishedName = espk.getFieldValueOfReferencedEntity("dname");
                 Trace.info(" alias name from Gateway Cert store :" + certStoreDistinguishedName);
                 if (certStoreDistinguishedName.equals(alias)) {
-                    Trace.info("Removing existing certs" + alias);
+                    Trace.info("Removing existing cert as it matches the current cert" + alias);
                     values.remove(value);
+                    continue;
                 }
-                Trace.info("adding " + alias);
-                values.add(new Value(portableESPK));
             }
+            Trace.info("adding " + alias);
+            values.add(new Value(portableESPK));
             field.setValues(values);
         } else {
+            Trace.debug("Replacing exising cert reference");
             entity.setReferenceField(fieldName, portableESPK);
         }
         entityStore.updateEntity(entity);

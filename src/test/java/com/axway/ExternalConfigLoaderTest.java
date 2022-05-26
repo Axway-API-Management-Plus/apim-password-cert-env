@@ -3,6 +3,7 @@ package com.axway;
 import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreFactory;
+import com.vordel.es.Value;
 import com.vordel.es.util.ShorthandKeyFinder;
 import com.vordel.es.xes.PortableESPK;
 import com.vordel.trace.Trace;
@@ -25,6 +26,7 @@ import java.lang.reflect.Field;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
@@ -79,11 +81,25 @@ public class ExternalConfigLoaderTest {
     @Test
     public void testDisableCassandraSSL(){
 
-        externalConfigLoader.disableCassandraSSL(entityStore);
+        externalConfigLoader.disableCassandraSSL(entityStore, "true");
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+        System.out.println(entity.getBooleanValue("useSSL"));
         Assert.assertFalse(entity.getBooleanValue("useSSL"));
     }
+
+    @Test
+    public void testEnableCassandraSSL() throws NoSuchFieldException, IllegalAccessException{
+
+        Map<String, String> envVars =  new HashMap<>();
+        envVars.put("cassandra_disablessl", "false");
+        setupEnvVariables(envVars);
+        externalConfigLoader.updatePassword(entityStore);
+        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
+        Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+        Assert.assertTrue(entity.getBooleanValue("useSSL"));
+    }
+
 
 
     @Test
@@ -273,6 +289,7 @@ public class ExternalConfigLoaderTest {
             "PLHu3INlHcXQs3AY0wNBLhL2jBwZ0uwBYK+entFpCgb+Z+RQ+uxs3joYuKEMj6M6\n" +
             "6Xi8yAoGAN92VRi93iss3A7zoAsrPXCO7pNZdz3QzJ3Jjv9KW48DmQ==\n" +
             "-----END CERTIFICATE-----";
+
         String pemKey = "src/test/resources/acp-key.pem";
         String cert = "src/test/resources/acp-crt.pem";
 
@@ -288,11 +305,20 @@ public class ExternalConfigLoaderTest {
         entityStore.updateEntity(entity);
         externalConfigLoader.updatePassword(entityStore);
         entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
-        Assert.assertEquals("sslTrustedCerts", "/[Certificates]name=Certificate Store/[Certificate]dname=CN=Domain", ((PortableESPK)entity.getField("sslTrustedCerts").getValueList().get(0).getRef()).toShorthandString());
+        String certAlias = "/[Certificates]name=Certificate Store/[Certificate]dname=CN=Domain";
+        List<Value> values = entity.getField("sslTrustedCerts").getValueList();
+
+        System.out.println(values);
+        System.out.println(values.size());
+        List<Value> filteredValues = values.stream().filter(value -> ((PortableESPK)value.getRef()).toShorthandString().equals(certAlias)).collect(Collectors.toList());
+
+        Assert.assertEquals("sslTrustedCerts", certAlias, ((PortableESPK)filteredValues.get(0).getRef()).toShorthandString());
         Assert.assertEquals("sslCertificate", "/[Certificates]name=Certificate Store/[Certificate]dname=213910179734667807042092962809881497910", ((PortableESPK)entity.getField("sslCertificate").getValueList().get(0).getRef()).toShorthandString());
 
 
     }
+
+
 
     @Test
     public void testUpdateCassandraKPSTablesConsistencyLevel(){

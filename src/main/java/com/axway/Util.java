@@ -33,6 +33,8 @@ public final  class  Util {
     }
 
     public static String getAliasName(X509Certificate certificate){
+
+
         String alias = certificate.getSubjectDN().getName();
         if (alias.equals("")) {
             alias = certificate.getSerialNumber().toString();
