@@ -113,12 +113,14 @@ environment:
    export connecttourlcacert_backend: /opt/Axway/apigateway/ext/conf/acp-ca.pem
 ```
 
-## Add Certificate to Policy Certificate Store
+## Add Certificate to Policy / Gateway Certificate Store
 
 |environment variable Name | Filter / Connection  Name | Description|
 --- | --- | ---
-|certandkey_certstore| Certficate Store | Add P12 file /base64 encoded content to certficate store|
+|certandkey_certstore| Certficate Store | Adds P12 file /base64 encoded content to certficate store|
 |certandkeypassword_certstore| Certficate Store | Password of p12 file|
+|cert_name| Certficate Store | Adds certificate to certficate store |
+
 
 
 ## Configure HTTPS Listener Certificate and trust certificate for Mutual Auth with p12 file
