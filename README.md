@@ -115,11 +115,11 @@ environment:
 
 ## Add Certificate to Policy / Gateway Certificate Store
 
-|environment variable Name | Filter / Connection  Name | Description|
---- | --- | ---
-|certandkey_certstore| Certficate Store | Adds P12 file /base64 encoded content to certficate store|
-|certandkeypassword_certstore| Certficate Store | Password of p12 file|
-|cert_name| Certficate Store | Adds certificate to certficate store |
+| environment variable Name    | Filter / Connection  Name | Description                                               |
+|------------------------------|---------------------------|-----------------------------------------------------------|
+| certandkey_certstore         | Certficate Store          | Adds P12 file /base64 encoded content to certficate store |
+| certandkeypassword_certstore | Certficate Store          | Password of p12 file                                      |
+| cert_name                    | Certficate Store          | Adds certificate to certficate store                      |
 
 
 
