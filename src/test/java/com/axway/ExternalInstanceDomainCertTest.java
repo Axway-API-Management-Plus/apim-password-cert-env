@@ -1,6 +1,13 @@
 package com.axway;
 
+import com.vordel.trace.Trace;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -12,11 +19,20 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({ Trace.class })
+@SuppressStaticInitializationFor({ "com.vordel.trace.Trace" })
 public class ExternalInstanceDomainCertTest {
 
     CertHelper certHelper = new CertHelper();
     ExternalInstanceDomainCert externalInstanceDomainCert = new ExternalInstanceDomainCert();
 
+    @Before
+    public void setup() {
+        mockStatic(Trace.class);
+    }
     @Test
     public void testCerts(){
         try {

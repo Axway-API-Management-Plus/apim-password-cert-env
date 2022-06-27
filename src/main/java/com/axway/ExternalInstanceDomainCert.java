@@ -1,7 +1,6 @@
 package com.axway;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.vordel.trace.Trace;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -30,9 +29,6 @@ import java.util.Base64;
 
 public class ExternalInstanceDomainCert {
 
-    private static final Logger log = LogManager.getLogger(ExternalInstanceDomainCert.class);
-
-
     public final static String LINE_SEPARATOR = System.getProperty("line.separator");
     private final Base64.Encoder encoder;
 
@@ -42,7 +38,7 @@ public class ExternalInstanceDomainCert {
 
     public void updateMgmtFile(File mgmtFile, String CAAlias) throws ParserConfigurationException, IOException, SAXException, TransformerException {
         if (mgmtFile.exists()) {
-            log.info("Management file mgmt.xml exists");
+            Trace.info("Management file mgmt.xml exists");
         }
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -73,7 +69,7 @@ public class ExternalInstanceDomainCert {
 
         String CAAlias = null;
         if (certsXml.exists()) {
-            log.info("Management file certs.xml exists");
+            Trace.info("Management file certs.xml exists");
         }
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<ConfigurationFragment>");
