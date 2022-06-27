@@ -122,7 +122,6 @@ environment:
 | cert_name                    | Certficate Store          | Adds certificate to certficate store                      |
 
 
-
 ## Configure HTTPS Listener Certificate and trust certificate for Mutual Auth with p12 file
 
 | environment variable Name        | Filter / Connection  Name | Description                                                                                                                   |
