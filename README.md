@@ -104,7 +104,7 @@ environment:
 | connecttourlkey_name      | Connect to URL            | Private key of the certificate path or base64 encoded content |
 | connecttourlcacert_name   | Connect to URL            | CA certificate path or baseb4 encoded content                 |
 
-### Connect to URL Client Authentication Example 
+### Connect to URL Client Authentication Example
 
 ```
 #backend - Name of connect to url filter
@@ -113,12 +113,14 @@ environment:
    export connecttourlcacert_backend: /opt/Axway/apigateway/ext/conf/acp-ca.pem
 ```
 
-## Add Certificate to Policy Certificate Store
+## Add Certificate to Policy / Gateway Certificate Store
 
 |environment variable Name | Filter / Connection  Name | Description|
 --- | --- | ---
-|certandkey_certstore| Certficate Store | Add P12 file /base64 encoded content to certficate store|
+|certandkey_certstore| Certficate Store | Adds P12 file /base64 encoded content to certficate store|
 |certandkeypassword_certstore| Certficate Store | Password of p12 file|
+|cert_name| Certficate Store | Adds certificate to certficate store |
+
 
 
 ## Configure HTTPS Listener Certificate and trust certificate for Mutual Auth with p12 file
@@ -391,8 +393,8 @@ $mvn clean package
 
 - Build a container merge directory ( **--merge-dir** ) option
 
-  - The merge directory must be called apigateway and must have the same directory structure as in an API Gateway installation.
-  - Copy the JAR file to a new directory /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway/ext/lib/ and specify /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway to the --merge-dir option.
+    - The merge directory must be called apigateway and must have the same directory structure as in an API Gateway installation.
+    - Copy the JAR file to a new directory /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway/ext/lib/ and specify /Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway to the --merge-dir option.
 
 ```bash
 ./build_gw_image.py --license=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/licenses/apim.lic --default-cert --parent-image=apigw-base --merge-dir=/Users/axway/APIM/apigw-emt-scripts-2.1.0-SNAPSHOT/apigateway --fed=container_env.fed --out-image=apim:latest
