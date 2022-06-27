@@ -1,7 +1,6 @@
 package com.axway;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.vordel.trace.Trace;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -30,25 +29,16 @@ import java.util.Base64;
 
 public class ExternalInstanceDomainCert {
 
-    private static final Logger log = LogManager.getLogger(ExternalInstanceDomainCert.class);
-
-
     public final static String LINE_SEPARATOR = System.getProperty("line.separator");
-    private Base64.Encoder encoder;
+    private final Base64.Encoder encoder;
 
     public ExternalInstanceDomainCert() {
         encoder = Base64.getMimeEncoder(64, LINE_SEPARATOR.getBytes());
     }
 
-
-    // File certsXml = new File(Config.getVDir("VINSTDIR"), "conf");
-    // File certsXml = new File("src/");
-    // certsXml = new File(certsXml, "certs.xml");
-
-
     public void updateMgmtFile(File mgmtFile, String CAAlias) throws ParserConfigurationException, IOException, SAXException, TransformerException {
         if (mgmtFile.exists()) {
-            log.info("Management file mgmt.xml exists");
+            Trace.info("Management file mgmt.xml exists");
         }
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -73,16 +63,13 @@ public class ExternalInstanceDomainCert {
         FileWriter writer = new FileWriter(mgmtFile);
         StreamResult result = new StreamResult(writer);
         transformer.transform(source, result);
-//        byte[] data = Files.readAllBytes(Paths.get(mgmtFile.getAbsolutePath()));
-//        System.out.println(new String(data));
-
     }
 
     public String certsFile(PKCS12 pkcs12, File certsXml) throws IOException, CertificateException {
 
         String CAAlias = null;
         if (certsXml.exists()) {
-            log.info("Management file certs.xml exists");
+            Trace.info("Management file certs.xml exists");
         }
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("<ConfigurationFragment>");
@@ -109,16 +96,9 @@ public class ExternalInstanceDomainCert {
             endCertificateElement(stringBuilder);
         }
         stringBuilder.append("</ConfigurationFragment>");
-        FileOutputStream fileOutputStream = null;
 
-        try {
-            fileOutputStream = new FileOutputStream(certsXml);
+        try (FileOutputStream fileOutputStream = new FileOutputStream(certsXml)) {
             fileOutputStream.write(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
-            fileOutputStream.close();
-        } finally {
-            if (fileOutputStream != null) {
-                fileOutputStream.close();
-            }
         }
         return CAAlias;
     }
@@ -142,7 +122,7 @@ public class ExternalInstanceDomainCert {
 
 
     public static byte[] signData(byte[] data, PrivateKey key) {
-        Signature signer = null;
+        Signature signer;
         try {
             signer = Signature.getInstance("SHA256withRSA");
             signer.initSign(key);
@@ -155,7 +135,7 @@ public class ExternalInstanceDomainCert {
     }
 
     public static boolean verifySignature(byte[] data, PublicKey key, byte[] sig) {
-        Signature signer = null;
+        Signature signer;
         try {
             signer = Signature.getInstance("SHA256withRSA");
             signer.initVerify(key);
