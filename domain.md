@@ -149,10 +149,16 @@ openssl x509 -req -days 360 -in dssgateway.csr -CA CA.pem -CAkey CA.key -CAcreat
 
 command creates a file named signedbygatewayCA.crt
 
-- Create p12 file **without password**
+- Create p12 file **without password** if policy project is not protected with password
 
 ```bash
 openssl pkcs12 -export -in signedbygatewayCA.crt -inkey dssgateway-key.pem -out topology.p12 -chain -CAfile CA.pem -name 'topology-cert' -passout pass:
+```
+
+- Create p12 file  if policy project is not protected with password
+
+```bash
+openssl pkcs12 -export -in signedbygatewayCA.crt -inkey dssgateway-key.pem -out topology.p12 -chain -CAfile CA.pem -name 'topology-cert' -passout pass:changeme
 ```
 
 - Prepare API Gateway fed file
