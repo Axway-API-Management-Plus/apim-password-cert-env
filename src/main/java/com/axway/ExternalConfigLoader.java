@@ -1,6 +1,7 @@
 package com.axway;
 
 import com.vordel.common.Config;
+import com.vordel.common.crypto.PasswordCipher;
 import com.vordel.config.ConfigContext;
 import com.vordel.config.LoadableModule;
 import com.vordel.es.*;
@@ -10,6 +11,7 @@ import com.vordel.trace.Trace;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -23,6 +25,15 @@ public class ExternalConfigLoader implements LoadableModule {
     private final ExternalInstanceDomainCert externalInstanceDomainCert = new ExternalInstanceDomainCert();
     private final List<String> mailConnectionTypes = Arrays.asList("NONE", "SSL", "TLS");
 
+    private PasswordCipher passwordCipher;
+
+    public ExternalConfigLoader(PasswordCipher passwordCipher){
+        this.passwordCipher = passwordCipher;
+    }
+
+    public ExternalConfigLoader(){
+    }
+
     @Override
     public void load(LoadableModule arg0, String arg1) {
         Trace.info("loading Password and Certificate Environment variable Module");
@@ -35,6 +46,7 @@ public class ExternalConfigLoader implements LoadableModule {
 
     @Override
     public void configure(ConfigContext configContext, Entity entity) throws EntityStoreException {
+        passwordCipher = configContext.getCipher();
         Trace.info("Loading configuration Password and Certificate Environment variable Module");
         EntityStore entityStore = configContext.getStore();
         updatePassword(entityStore);
@@ -177,14 +189,18 @@ public class ExternalConfigLoader implements LoadableModule {
                     }
                     File gatewayConfDir = new File(Config.getVDir("VINSTDIR"), "conf");
                     File certsXml = new File(gatewayConfDir, "certs.xml");
-                    String caAlias = externalInstanceDomainCert.certsFile(pkcs12, certsXml);
+                    String caAlias = externalInstanceDomainCert.certsFile(pkcs12, certsXml, passwordCipher);
                     File mgmtXml = new File(gatewayConfDir, "mgmt.xml");
                     externalInstanceDomainCert.updateMgmtFile(mgmtXml, caAlias);
                 } catch (Exception e) {
                     Trace.error("Unable to add the p12 from Environment variable", e);
                 }
             } else if (key.startsWith("cassandra_password")) {
-                updateCassandraPassword(entityStore, passwordValue.toCharArray());
+                try {
+                    updateCassandraPassword(entityStore, passwordValue.toCharArray());
+                } catch (GeneralSecurityException e) {
+                    Trace.error("Unable to set Cassandra password", e);
+                }
             }
         }
 
@@ -260,10 +276,11 @@ public class ExternalConfigLoader implements LoadableModule {
         return shorthandKeyFinder.getEntity(shorthandKey);
     }
 
-    private void setUsernameAndPassword(Map<String, String> attributes, Entity entity, String usernameFieldName) {
+    private void setUsernameAndPassword(Map<String, String> attributes, Entity entity, String usernameFieldName) throws GeneralSecurityException {
         String password = attributes.get("password");
         if (password != null) {
-            password = Base64.getEncoder().encodeToString(password.getBytes());
+            byte[] encryptedPassword = passwordCipher.encrypt(password.getBytes());
+            password = Base64.getEncoder().encodeToString(encryptedPassword);
             entity.setStringField("password", password);
         }
         String username = attributes.get("username");
@@ -272,7 +289,7 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void updateLDAP(EntityStore entityStore, Map<String, Map<String, String>> ldapObjs) {
+    public void updateLDAP(EntityStore entityStore, Map<String, Map<String, String>> ldapObjs)  {
         if (!ldapObjs.isEmpty()) {
             for (Map.Entry<String, Map<String, String>> entry : ldapObjs.entrySet()) {
                 String filterName = entry.getKey();
@@ -281,12 +298,17 @@ public class ExternalConfigLoader implements LoadableModule {
                 Entity entity = getEntity(entityStore, "/[LdapDirectoryGroup]name=LDAP Directories/[LdapDirectory]name=" + filterName);
                 if (entity == null)
                     return;
-                setUsernameAndPassword(attributes, entity, "userName");
-                String url = attributes.get("url");
-                if (url != null) {
-                    entity.setStringField("url", url);
+                try {
+                    setUsernameAndPassword(attributes, entity, "userName");
+                    String url = attributes.get("url");
+                    if (url != null) {
+                        entity.setStringField("url", url);
+                    }
+                    entityStore.updateEntity(entity);
+                } catch (GeneralSecurityException e) {
+                    throw new RuntimeException(e);
                 }
-                entityStore.updateEntity(entity);
+
             }
         }
 
@@ -297,12 +319,17 @@ public class ExternalConfigLoader implements LoadableModule {
         Entity entity = getEntity(entityStore, "/[JMSServiceGroup]name=JMS Services/[JMSService]name=" + filterName);
         if (entity == null)
             return;
-        setUsernameAndPassword(attributes, entity, "userName");
-        String url = attributes.get("url");
-        if (url != null) {
-            entity.setStringField("providerURL", url);
+        try {
+            setUsernameAndPassword(attributes, entity, "userName");
+            String url = attributes.get("url");
+            if (url != null) {
+                entity.setStringField("providerURL", url);
+            }
+            entityStore.updateEntity(entity);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
         }
-        entityStore.updateEntity(entity);
+
     }
 
     public void updateSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
@@ -317,13 +344,18 @@ public class ExternalConfigLoader implements LoadableModule {
             Trace.error("Unable to locate SMTP connection : " + filterName);
             return;
         }
-        setUsernameAndPassword(attributes, entity, "username");
-        String host = attributes.get("url");
-        if (host != null) {
-            entity.setStringField("smtpServer", host);
+        try {
+            setUsernameAndPassword(attributes, entity, "username");
+            String host = attributes.get("url");
+            if (host != null) {
+                entity.setStringField("smtpServer", host);
+            }
+            updateMailConnectionTypeAndPort(entity, filterName, "smtpPort");
+            entityStore.updateEntity(entity);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
         }
-        updateMailConnectionTypeAndPort(entity, filterName, "smtpPort");
-        entityStore.updateEntity(entity);
+
     }
 
     public void updateAlertSMTP(EntityStore entityStore, Map<String, String> attributes, String filterName) {
@@ -333,13 +365,17 @@ public class ExternalConfigLoader implements LoadableModule {
             if (entity == null) {
                 return;
             }
-            setUsernameAndPassword(attributes, entity, "username");
-            String host = attributes.get("url");
-            if (host != null) {
-                entity.setStringField("smtp", host);
+            try {
+                setUsernameAndPassword(attributes, entity, "username");
+                String host = attributes.get("url");
+                if (host != null) {
+                    entity.setStringField("smtp", host);
+                }
+                updateMailConnectionTypeAndPort(entity, filterName, "port");
+                entityStore.updateEntity(entity);
+            } catch (GeneralSecurityException e) {
+                throw new RuntimeException(e);
             }
-            updateMailConnectionTypeAndPort(entity, filterName, "port");
-            entityStore.updateEntity(entity);
         }
     }
 
@@ -363,10 +399,11 @@ public class ExternalConfigLoader implements LoadableModule {
         }
     }
 
-    public void updateCassandraPassword(EntityStore entityStore, char[] password) {
+    public void updateCassandraPassword(EntityStore entityStore, char[] password) throws GeneralSecurityException {
         String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
         Entity entity = getEntity(entityStore, shorthandKey);
-        String encodedPassword = Base64.getEncoder().encodeToString(String.valueOf(password).getBytes());
+        byte[] encryptedPassword = passwordCipher.encrypt(String.valueOf(password).getBytes());
+        String encodedPassword = Base64.getEncoder().encodeToString(encryptedPassword);
         entity.setStringField("password", encodedPassword);
         entityStore.updateEntity(entity);
     }
@@ -611,9 +648,7 @@ public class ExternalConfigLoader implements LoadableModule {
             Trace.info("Updating existing certificate");
             for (int i = 0; i < certificates.length; i++) {
                 if (i == 0) {
-                    certEntity.setBinaryValue("content", certificates[i].getEncoded());
-                    String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
-                    certEntity.setStringField("key", key);
+                    updateCertificateEntityWithKey(certEntity, certificates[i].getEncoded(), pkcs12.getPrivateKey().getEncoded());
                     entityStore.updateEntity(certEntity);
                 } else {
                     //handle CA Certificate chain
@@ -630,9 +665,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 if (i == 0) {
                     Trace.info("Importing Leaf certificate");
                     certEntity.setStringField("dname", alias);
-                    certEntity.setBinaryValue("content", certificates[i].getEncoded());
-                    String key = Base64.getEncoder().encodeToString(pkcs12.getPrivateKey().getEncoded());
-                    certEntity.setStringField("key", key);
+                    updateCertificateEntityWithKey(certEntity, certificates[i].getEncoded(), pkcs12.getPrivateKey().getEncoded());
                     entityStore.addEntity(groups.iterator().next(), certEntity);
                     Trace.info("Leaf certificate imported");
                 } else {
@@ -645,6 +678,14 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         }
         return pkcs12;
+    }
+
+    public void updateCertificateEntityWithKey(Entity certEntity, byte[] publicKey, byte[] privateKey) throws GeneralSecurityException {
+        Trace.info("Updating existing certificate");
+        certEntity.setBinaryValue("content", publicKey);
+        byte[] keyBytes = passwordCipher.encrypt(privateKey);
+        String keyStr = Base64.getEncoder().encodeToString(keyBytes);
+        certEntity.setStringField("key", keyStr);
     }
 
 
@@ -675,10 +716,9 @@ public class ExternalConfigLoader implements LoadableModule {
         if (certEntity != null) {
             //Updates the existing certificate in the certStore
             Trace.info("Updating existing certificate");
-            certEntity.setBinaryValue("content", certObj.getEncoded());
-            String keyStr = Base64.getEncoder().encodeToString(privateKey.getEncoded());
-            certEntity.setStringField("key", keyStr);
+            updateCertificateEntityWithKey(certEntity, certObj.getEncoded(), privateKey.getEncoded());
             entityStore.updateEntity(certEntity);
+
             //handle CA Certificate chain
             for (X509Certificate x509Certificate : caCerts) {
                 importPublicCertificate(x509Certificate, entityStore);
@@ -690,9 +730,7 @@ public class ExternalConfigLoader implements LoadableModule {
             certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
             Trace.info("Importing Leaf certificate");
             certEntity.setStringField("dname", alias);
-            certEntity.setBinaryValue("content", certObj.getEncoded());
-            String keyStr = Base64.getEncoder().encodeToString(privateKey.getEncoded());
-            certEntity.setStringField("key", keyStr);
+            updateCertificateEntityWithKey(certEntity, certObj.getEncoded(), privateKey.getEncoded());
             entityStore.addEntity(groups.iterator().next(), certEntity);
             Trace.info("Leaf certificate imported");
             //handle CA Certificate chain

@@ -1,5 +1,6 @@
 package com.axway;
 
+import com.vordel.common.crypto.PasswordCipher;
 import com.vordel.es.Entity;
 import com.vordel.es.EntityStore;
 import com.vordel.es.EntityStoreFactory;
@@ -12,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
@@ -22,23 +24,24 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
+import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
+import static org.powermock.api.mockito.PowerMockito.*;
 
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Trace.class })
-@SuppressStaticInitializationFor({ "com.vordel.trace.Trace" })
+@SuppressStaticInitializationFor({ "com.vordel.trace.Trace" , "com.vordel.common.crypto.PasswordCipher"})
 @PowerMockIgnore("javax.management.*")
 public class ExternalConfigLoaderTest {
 
     final private static Logger logger = LoggerFactory.getLogger(ExternalConfigLoaderTest.class);
 
-    final private ExternalConfigLoader externalConfigLoader = new ExternalConfigLoader();
+    private ExternalConfigLoader externalConfigLoader;
     private EntityStore entityStore;
 
 
@@ -188,10 +191,14 @@ public class ExternalConfigLoaderTest {
     @Test
     public void testUpdateCassandraPassword(){
         char[] password = "changeme".toCharArray();
-        externalConfigLoader.updateCassandraPassword(entityStore, password);
-        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
-        Assert.assertEquals("password", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("password"))));
+        try {
+            externalConfigLoader.updateCassandraPassword(entityStore, password);
+            String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
+            Entity entity = externalConfigLoader.getEntity(entityStore, shorthandKey);
+            Assert.assertEquals("password", "changeme", new String(Base64.getDecoder().decode(entity.getStringValue("password"))));
+        } catch (GeneralSecurityException e) {
+            Assert.fail("Unale to update Cassandra password "+ e.getMessage());
+        }
     }
 
     @Test
@@ -482,8 +489,11 @@ public class ExternalConfigLoaderTest {
 
 
     @Before
-    public void setup() {
+    public void setup() throws GeneralSecurityException {
         mockStatic(Trace.class);
+        PasswordCipher passwordCipher = mock(PasswordCipher.class);
+        when(passwordCipher.encrypt(any())).thenAnswer(i -> i.getArguments()[0]);
+        externalConfigLoader = new ExternalConfigLoader(passwordCipher);
         File file = new File("src/test/resources/test-env/configs.xml");
         String url = "federated:file:"+file.getAbsolutePath();
         entityStore =  EntityStoreFactory.createESForURL(url);
