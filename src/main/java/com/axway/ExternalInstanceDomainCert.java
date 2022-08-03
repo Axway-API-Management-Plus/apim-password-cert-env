@@ -1,5 +1,6 @@
 package com.axway;
 
+import com.vordel.common.crypto.PasswordCipher;
 import com.vordel.trace.Trace;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -65,7 +66,7 @@ public class ExternalInstanceDomainCert {
         transformer.transform(source, result);
     }
 
-    public String certsFile(PKCS12 pkcs12, File certsXml) throws IOException, CertificateException {
+    public String certsFile(PKCS12 pkcs12, File certsXml, PasswordCipher passwordCipher) throws IOException, GeneralSecurityException {
 
         String CAAlias = null;
         if (certsXml.exists()) {
@@ -75,7 +76,7 @@ public class ExternalInstanceDomainCert {
         stringBuilder.append("<ConfigurationFragment>");
         PrivateKey privateKey = pkcs12.getPrivateKey();
 
-        String privateKeyEncoded = encoder.encodeToString(privateKey.getEncoded());
+        String privateKeyEncoded = encoder.encodeToString(passwordCipher.encrypt(privateKey.getEncoded()));
         Certificate[] certificates = pkcs12.getCertificates();
         for (Certificate certificate : certificates) {
             PublicKey publicKey = certificate.getPublicKey();
