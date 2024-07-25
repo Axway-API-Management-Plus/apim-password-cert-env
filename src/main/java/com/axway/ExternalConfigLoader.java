@@ -11,9 +11,8 @@ import com.vordel.trace.Trace;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.security.GeneralSecurityException;
-import java.security.Principal;
-import java.security.PrivateKey;
+import java.io.IOException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -21,6 +20,17 @@ import java.util.*;
 
 public class ExternalConfigLoader implements LoadableModule {
 
+    public static final String SMTP = "smtp_";
+    public static final String PASSWORD = "password";
+    public static final String USERNAME = "username";
+    public static final String DNAME = "dname";
+    public static final String CONTENT = "content";
+    public static final String CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS = "/[CassandraSettings]name=Cassandra Settings";
+    public static final String USE_SSL = "useSSL";
+    public static final String CERTIFICATE = "Certificate";
+    public static final String CERTIFICATES = "Certificates";
+    public static final String READ_CONSISTENCY_LEVEL = "readConsistencyLevel";
+    public static final String WRITE_CONSISTENCY_LEVEL = "writeConsistencyLevel";
     private final CertHelper certHelper = new CertHelper();
     private final ExternalInstanceDomainCert externalInstanceDomainCert = new ExternalInstanceDomainCert();
     private final List<String> mailConnectionTypes = Arrays.asList("NONE", "SSL", "TLS");
@@ -59,7 +69,7 @@ public class ExternalConfigLoader implements LoadableModule {
         Iterator<String> keysIterator = keys.iterator();
         Map<String, String> ldap = Util.groupEnvVariables(envValues, "ldap_");
         Map<String, String> jms = Util.groupEnvVariables(envValues, "jms_");
-        Map<String, String> smtp = Util.groupEnvVariables(envValues, "smtp_");
+        Map<String, String> smtp = Util.groupEnvVariables(envValues, SMTP);
         Map<String, String> httpBasic = Util.groupEnvVariables(envValues, "httpbasic_");
         Map<String, String> cassandraConsistency = Util.groupEnvVariables(envValues, "cassandraconsistency_");
 
@@ -67,7 +77,7 @@ public class ExternalConfigLoader implements LoadableModule {
             String key = keysIterator.next();
             if (!key.contains("_"))
                 continue;
-            if(key.startsWith("ldap_") || key.startsWith("jms_") || key.startsWith("smtp_") || key.startsWith("httpbasic_") || key.startsWith("cassandraconsistency_"))
+            if(key.startsWith("ldap_") || key.startsWith("jms_") || key.startsWith(SMTP) || key.startsWith("httpbasic_") || key.startsWith("cassandraconsistency_"))
                 continue;
             String filterName = key.split("_")[1];
             String passwordValue = envValues.get(key);
@@ -172,9 +182,11 @@ public class ExternalConfigLoader implements LoadableModule {
                     Trace.info("Updating JWT  verify certificate");
                     X509Certificate certificate = certHelper.parseX509(passwordValue).get(0);
                     String alias = importPublicCertificate(certificate, entityStore);
-                    jwtVerifyConfigureCertificate(entityStore, filterName, alias);
+                    if(!jwtVerifyConfigureCertificate(entityStore, filterName, alias)){
+                        Trace.error("Unable to update certificate to JWT verify Filter");
+                    }
                 } catch (Exception e) {
-                    Trace.error("Unable to add the certificate from Environment variable", e);
+                    Trace.error("Unable to update certificate to JWT verify Filter");
                 }
             } else if (key.startsWith("gatewaytoplogycertandkey_")) {
                 try {
@@ -243,7 +255,7 @@ public class ExternalConfigLoader implements LoadableModule {
             for (Map.Entry<String, Map<String, String>> entry : httpBasicObjs.entrySet()) {
                 String filterName = entry.getKey();
                 Map<String, String> attributes = entry.getValue();
-                String password = attributes.get("password");
+                String password = attributes.get(PASSWORD);
                 String shorthandKey = "/[AuthProfilesGroup]name=Auth Profiles/[BasicAuthGroup]name=HTTP Basic/[BasicProfile]name=" + filterName;
 
                 Entity entity = getEntity(entityStore, shorthandKey);
@@ -277,13 +289,13 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     private void setUsernameAndPassword(Map<String, String> attributes, Entity entity, String usernameFieldName) throws GeneralSecurityException {
-        String password = attributes.get("password");
+        String password = attributes.get(PASSWORD);
         if (password != null) {
             byte[] encryptedPassword = passwordCipher.encrypt(password.getBytes());
             password = Base64.getEncoder().encodeToString(encryptedPassword);
-            entity.setStringField("password", password);
+            entity.setStringField(PASSWORD, password);
         }
-        String username = attributes.get("username");
+        String username = attributes.get(USERNAME);
         if (username != null) {
             entity.setStringField(usernameFieldName, username);
         }
@@ -345,7 +357,7 @@ public class ExternalConfigLoader implements LoadableModule {
             return;
         }
         try {
-            setUsernameAndPassword(attributes, entity, "username");
+            setUsernameAndPassword(attributes, entity, USERNAME);
             String host = attributes.get("url");
             if (host != null) {
                 entity.setStringField("smtpServer", host);
@@ -366,7 +378,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 return;
             }
             try {
-                setUsernameAndPassword(attributes, entity, "username");
+                setUsernameAndPassword(attributes, entity, USERNAME);
                 String host = attributes.get("url");
                 if (host != null) {
                     entity.setStringField("smtp", host);
@@ -380,7 +392,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     public void updateMailConnectionTypeAndPort(Entity entity, String filterName, String portFieldName) {
-        String connectionType = System.getenv("smtp_" + filterName + "_connectionType");
+        String connectionType = System.getenv(SMTP + filterName + "_connectionType");
         if (connectionType != null) {
             // Possible Values NONE, SSL TLS
             if (mailConnectionTypes.contains(connectionType)) {
@@ -389,7 +401,7 @@ public class ExternalConfigLoader implements LoadableModule {
                 Trace.error("Invalid connection type : " + connectionType);
             }
         }
-        String port = System.getenv("smtp_" + filterName + "_port");
+        String port = System.getenv(SMTP + filterName + "_port");
         if (port != null) {
             try {
                 entity.setStringField(portFieldName, port);
@@ -400,17 +412,16 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     public void updateCassandraPassword(EntityStore entityStore, char[] password) throws GeneralSecurityException {
-        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        Entity entity = getEntity(entityStore, shorthandKey);
+        Entity entity = getEntity(entityStore, CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS);
         byte[] encryptedPassword = passwordCipher.encrypt(String.valueOf(password).getBytes());
         String encodedPassword = Base64.getEncoder().encodeToString(encryptedPassword);
-        entity.setStringField("password", encodedPassword);
+        entity.setStringField(PASSWORD, encodedPassword);
         entityStore.updateEntity(entity);
     }
 
     public void updateCassandraCertAndKey(EntityStore entityStore, String clientAuthAlias, Certificate[] certificates) {
-        Entity entity = getEntity(entityStore, "/[CassandraSettings]name=Cassandra Settings");
-        boolean useSSL = entity.getBooleanValue("useSSL");
+        Entity entity = getEntity(entityStore, CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS);
+        boolean useSSL = entity.getBooleanValue(USE_SSL);
         if (useSSL) {
             String clientAuth = "sslCertificate";
             updateCertEntity(entityStore, entity, clientAuthAlias, clientAuth, false);
@@ -428,8 +439,8 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     public void updateCassandraCert(EntityStore entityStore, String alias, boolean append) {
-        Entity entity = getEntity(entityStore, "/[CassandraSettings]name=Cassandra Settings");
-        boolean useSSL = entity.getBooleanValue("useSSL");
+        Entity entity = getEntity(entityStore, CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS);
+        boolean useSSL = entity.getBooleanValue(USE_SSL);
         if (useSSL) {
             String filedName = "sslTrustedCerts";
             updateCertEntity(entityStore, entity, alias, filedName, append);
@@ -437,10 +448,9 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
     public void disableCassandraSSL(EntityStore entityStore, String value) {
-        String shorthandKey = "/[CassandraSettings]name=Cassandra Settings";
-        Entity entity = getEntity(entityStore, shorthandKey);
+        Entity entity = getEntity(entityStore, CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS);
         boolean boolValue = Boolean.parseBoolean(value);
-        entity.setBooleanField("useSSL", !boolValue);
+        entity.setBooleanField(USE_SSL, !boolValue);
         entityStore.updateEntity(entity);
         if(!boolValue)
             Trace.info("Disabled Cassandra SSL");
@@ -472,16 +482,16 @@ public class ExternalConfigLoader implements LoadableModule {
             Trace.info("Alias :" + alias + "Escaped alias :" + escapedAlias);
             if (certEntity == null) {
                 Trace.info("Adding cert");
-                certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
+                certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, CERTIFICATE);
                 ESPK rootPK = entityStore.getRootPK();
-                EntityType group = entityStore.getTypeForName("Certificates");
+                EntityType group = entityStore.getTypeForName(CERTIFICATES);
                 Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
-                certEntity.setStringField("dname", alias);
-                certEntity.setBinaryValue("content", certificate.getEncoded());
+                certEntity.setStringField(DNAME, alias);
+                certEntity.setBinaryValue(CONTENT, certificate.getEncoded());
                 entityStore.addEntity(groups.iterator().next(), certEntity);
             } else {
                 Trace.info("Updating cert with alias " + escapedAlias);
-                certEntity.setBinaryValue("content", certificate.getEncoded());
+                certEntity.setBinaryValue(CONTENT, certificate.getEncoded());
                 entityStore.updateEntity(certEntity);
             }
             return alias;
@@ -540,16 +550,14 @@ public class ExternalConfigLoader implements LoadableModule {
 
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
-        // Trace.info("Certificate entity set to listener interface "+ certEntity);
         PortableESPK portableESPK = PortableESPK.toPortableKey(entityStore, certEntity.getPK());
-        //Trace.info("Portable : " + portableESPK);
         if (append) {
             Field field = entity.getField(fieldName);
             List<Value> values = field.getValueList();
             List<Value> cloneVales = new ArrayList<>(values);
             for (Value value : cloneVales) {
                 PortableESPK valueRef = (PortableESPK) value.getRef();
-                String certStoreDistinguishedName = valueRef.getFieldValueOfReferencedEntity("dname");
+                String certStoreDistinguishedName = valueRef.getFieldValueOfReferencedEntity(DNAME);
                 Trace.info(" alias name from Gateway Cert store :" + certStoreDistinguishedName);
                 if (certStoreDistinguishedName.equals(alias)) {
                     Trace.info("Removing existing cert as it matches the current cert" + alias);
@@ -627,7 +635,7 @@ public class ExternalConfigLoader implements LoadableModule {
     }
 
 
-    public PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws Exception {
+    public PKCS12 importP12(EntityStore entityStore, String cert, char[] password) throws GeneralSecurityException, IOException {
 
         PKCS12 pkcs12;
         File file = new File(cert);
@@ -642,7 +650,6 @@ public class ExternalConfigLoader implements LoadableModule {
         Certificate[] certificates = pkcs12.getCertificates();
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
-        // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
             //Updates the existing certificate in the certStore
             Trace.info("Updating existing certificate");
@@ -658,13 +665,13 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         } else {
             ESPK rootPK = entityStore.getRootPK();
-            EntityType group = entityStore.getTypeForName("Certificates");
+            EntityType group = entityStore.getTypeForName(CERTIFICATES);
             Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
-            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
+            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, CERTIFICATE);
             for (int i = 0; i < certificates.length; i++) {
                 if (i == 0) {
                     Trace.info("Importing Leaf certificate");
-                    certEntity.setStringField("dname", alias);
+                    certEntity.setStringField(DNAME, alias);
                     updateCertificateEntityWithKey(certEntity, certificates[i].getEncoded(), pkcs12.getPrivateKey().getEncoded());
                     entityStore.addEntity(groups.iterator().next(), certEntity);
                     Trace.info("Leaf certificate imported");
@@ -682,37 +689,37 @@ public class ExternalConfigLoader implements LoadableModule {
 
     public void updateCertificateEntityWithKey(Entity certEntity, byte[] publicKey, byte[] privateKey) throws GeneralSecurityException {
         Trace.info("Updating existing certificate");
-        certEntity.setBinaryValue("content", publicKey);
+        certEntity.setBinaryValue(CONTENT, publicKey);
         byte[] keyBytes = passwordCipher.encrypt(privateKey);
         String keyStr = Base64.getEncoder().encodeToString(keyBytes);
         certEntity.setStringField("key", keyStr);
+        certEntity.setStringField("issuer", "-1");
     }
 
 
-    public PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key, String alias) throws Exception {
+    public PKCS12 importCertAndKeyAndCA(EntityStore entityStore, String cert, String ca, String key, String alias) throws GeneralSecurityException, IOException {
 
         PKCS12 pkcs12 = new PKCS12();
         List<X509Certificate> caCerts = new ArrayList<>();
-        Trace.info("ca cert "+ca);
+        Trace.info("ca cert " + ca);
         if (ca != null) {
             caCerts = certHelper.parseX509(ca);
         }
         X509Certificate certObj = certHelper.parseX509(cert).get(0);
         if (alias == null) {
             alias = certObj.getSubjectDN().getName();
-            if (alias.equals("")) {
+            if (alias.isEmpty()) {
                 alias = certObj.getSerialNumber().toString();
             }
         }
         PrivateKey privateKey = certHelper.parsePrivateKey(key);
         if (privateKey == null) {
-            throw new Exception("Unable to parse a private key");
+            throw new IOException("Unable to parse a private key");
         }
         Trace.info("Certificate alias name : " + alias);
         String escapedAlias = ShorthandKeyFinder.escapeFieldValue(alias);
         Entity certEntity = getCertEntity(entityStore, escapedAlias);
         Trace.info("Escaped Certificate alias name : " + escapedAlias);
-        // Trace.info("Certificate Entity received from entity store : "+ certEntity);
         if (certEntity != null) {
             //Updates the existing certificate in the certStore
             Trace.info("Updating existing certificate");
@@ -725,11 +732,11 @@ public class ExternalConfigLoader implements LoadableModule {
             }
         } else {
             ESPK rootPK = entityStore.getRootPK();
-            EntityType group = entityStore.getTypeForName("Certificates");
+            EntityType group = entityStore.getTypeForName(CERTIFICATES);
             Collection<ESPK> groups = entityStore.listChildren(rootPK, group);
-            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, "Certificate");
+            certEntity = EntityStoreDelegate.createDefaultedEntity(entityStore, CERTIFICATE);
             Trace.info("Importing Leaf certificate");
-            certEntity.setStringField("dname", alias);
+            certEntity.setStringField(DNAME, alias);
             updateCertificateEntityWithKey(certEntity, certObj.getEncoded(), privateKey.getEncoded());
             entityStore.addEntity(groups.iterator().next(), certEntity);
             Trace.info("Leaf certificate imported");
@@ -755,21 +762,21 @@ public class ExternalConfigLoader implements LoadableModule {
         ShorthandKeyFinder shorthandKeyFinder = new ShorthandKeyFinder(entityStore);
         // Update KPS table consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[KPSRoot]name=Key Property Stores/[KPSPackage]**/[KPSDataSourceGroup]**/[KPSCassandraDataSource]name=Cassandra Storage",
-                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+            READ_CONSISTENCY_LEVEL, readConsistencyLevel, WRITE_CONSISTENCY_LEVEL, writeConsistencyLevel);
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[PortalConfiguration]name=Portal Config",
                 "quotaReadConsistency", readConsistencyLevel, "quotaWriteConsistency", writeConsistencyLevel);
         //Update throttling consistency level
-        updateCassandraConsistencyLevel(shorthandKeyFinder, "/[CassandraSettings]name=Cassandra Settings",
+        updateCassandraConsistencyLevel(shorthandKeyFinder, CASSANDRA_SETTINGS_NAME_CASSANDRA_SETTINGS,
                 "throttlingReadConsistencyLevel", readConsistencyLevel, "throttlingWriteConsistencyLevel", writeConsistencyLevel);
         //Update access token  consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AccessTokenStoreGroup]name=Access Token Stores/[AccessTokenPersist]**",
-                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+            READ_CONSISTENCY_LEVEL, readConsistencyLevel, WRITE_CONSISTENCY_LEVEL, writeConsistencyLevel);
         //Update auth code consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[AuthzCodeStoreGroup]name=Authorization Code Stores/[AuthzCodePersist]**",
-                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+            READ_CONSISTENCY_LEVEL, readConsistencyLevel, WRITE_CONSISTENCY_LEVEL, writeConsistencyLevel);
         //update client access token consistency level
         updateCassandraConsistencyLevel(shorthandKeyFinder, "/[OAuth2StoresGroup]name=OAuth2 Stores/[ClientAccessTokenStoreGroup]name=Client Access Token Stores/[ClientAccessTokenPersist]**",
-                "readConsistencyLevel", readConsistencyLevel, "writeConsistencyLevel", writeConsistencyLevel);
+            READ_CONSISTENCY_LEVEL, readConsistencyLevel, WRITE_CONSISTENCY_LEVEL, writeConsistencyLevel);
 
     }
 
