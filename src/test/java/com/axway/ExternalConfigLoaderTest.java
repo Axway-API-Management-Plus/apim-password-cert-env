@@ -36,7 +36,7 @@ import static org.powermock.api.mockito.PowerMockito.*;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ Trace.class })
 @SuppressStaticInitializationFor({ "com.vordel.trace.Trace" , "com.vordel.common.crypto.PasswordCipher"})
-@PowerMockIgnore("javax.management.*")
+@PowerMockIgnore({"javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "com.sun.org.apache.xalan.*"})
 public class ExternalConfigLoaderTest {
 
     final private static Logger logger = LoggerFactory.getLogger(ExternalConfigLoaderTest.class);
@@ -493,11 +493,13 @@ public class ExternalConfigLoaderTest {
         mockStatic(Trace.class);
         PasswordCipher passwordCipher = mock(PasswordCipher.class);
         when(passwordCipher.encrypt(any())).thenAnswer(i -> i.getArguments()[0]);
+        String path = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath() + "test-env/configs.xml";
         externalConfigLoader = new ExternalConfigLoader(passwordCipher);
-        File file = new File("src/test/resources/test-env/configs.xml");
-        String url = "federated:file:"+file.getAbsolutePath();
+      //  File file = new File("src/test/resources/test-env/configs.xml");
+        String url = "federated:file:"+path;
         entityStore =  EntityStoreFactory.createESForURL(url);
         entityStore.connect(url, new Properties());
 
     }
+
 }
